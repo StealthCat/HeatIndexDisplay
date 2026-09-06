@@ -1,0 +1,30 @@
+name: Add selectable weather source
+
+on:
+  push:
+    branches: [feature-weather-source]
+    paths:
+      - .github/add_wu_source.py
+      - .github/workflows/add-weather-source.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Apply Weather Underground source support
+        run: python .github/add_wu_source.py
+
+      - name: Commit generated source changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add T-Display-S3 Waveshare-ESP32-S3-Touch-LCD-2.8 README.md ARCHITECTURE.md RELEASE_V7_7_WEATHER_SOURCES.md
+          git commit -m "Add selectable Ambient Weather and Weather Underground sources"
+          git push origin HEAD:feature-weather-source
