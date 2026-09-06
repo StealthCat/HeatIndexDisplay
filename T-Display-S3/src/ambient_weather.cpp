@@ -12,6 +12,8 @@
 #include "weather_math.h"
 #include "config.h"
 
+static void respectAmbientRateLimit();
+
 String urlEncode(const String &s) {
   static const char hex[] = "0123456789ABCDEF";
   String out;
@@ -308,7 +310,7 @@ bool fetchAmbientSummary(String &errorOut) {
   return true;
 }
 
-bool pollAmbient(bool forceRedraw = true) {
+bool pollAmbient(bool forceRedraw) {
   WeatherData before = wx;
   String stationNameBefore = cfg.stationName;
 
