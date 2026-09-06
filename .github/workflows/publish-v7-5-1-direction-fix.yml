@@ -1,0 +1,96 @@
+name: Publish V7.5.1 direction helper fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-v7-5-1-direction-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply V7.5.1 fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          main = Path('Waveshare-ESP32-S3-Touch-LCD-2.8/src/main.cpp')
+          s = main.read_text(encoding='utf-8')
+
+          decl = 'String directionLongText(float deg);\n\n'
+          if 'String directionLongText(float deg);' not in s:
+              marker = 'String footerStateKey();\n\n'
+              if marker not in s:
+                  raise SystemExit('forward-declaration marker not found')
+              s = s.replace(marker, marker + decl, 1)
+
+          helper = '''String directionLongText(float deg) {
+            if (!isfinite(deg)) return "--";
+            static const char* dirs[] = {
+              "North", "Northeast", "East", "Southeast",
+              "South", "Southwest", "West", "Northwest"
+            };
+            int idx = (int)floorf((deg + 22.5f) / 45.0f) % 8;
+            return String(dirs[idx]);
+          }
+
+          '''
+
+          if 'String directionLongText(float deg) {' not in s:
+              marker = 'String signedTempDelta(float value) {\n'
+              if marker not in s:
+                  raise SystemExit('signedTempDelta insertion marker not found')
+              s = s.replace(marker, helper + marker, 1)
+
+          # Validate declaration/definition precede use.
+          call = s.find('String dirLong = directionLongText')
+          if call < 0:
+              raise SystemExit('directionLongText call not found')
+          if s.find('String directionLongText(float deg);') > call:
+              raise SystemExit('directionLongText declaration appears after use')
+          if s.find('String directionLongText(float deg) {') > call:
+              raise SystemExit('directionLongText definition appears after use')
+
+          main.write_text(s, encoding='utf-8')
+
+          Path('RELEASE_V7_5_1_DIRECTION_FIX.md').write_text('''# Production Release V7.5.1 — Waveshare direction helper compile fix
+
+V7.5.1 fixes the Waveshare compile error:
+
+    'directionLongText' was not declared in this scope
+
+## Cause
+
+During V7.5, the primitive icon-rendering block was replaced with the new RGB565 asset-based icon renderer. The existing `directionLongText()` helper was inside the replaced source range and was unintentionally removed, while its call in `drawWeatherScreen()` remained.
+
+## Fix
+
+The Waveshare source once again contains the long-form compass-direction helper and now also includes an explicit forward declaration near the top of `main.cpp`.
+
+No display layout, icon asset, weather calculation, network behavior, or configuration behavior changed from V7.5.
+''', encoding='utf-8')
+
+          readme = Path('README.md')
+          r = readme.read_text(encoding='utf-8')
+          r = r.replace('## Current release: V7.4', '## Current release: V7.5.1')
+          section = '''\n\n## Production Release V7.5.1\n\nRestores the Waveshare `directionLongText()` helper accidentally removed during the V7.5 icon conversion. See `RELEASE_V7_5_1_DIRECTION_FIX.md`.\n'''
+          if '## Production Release V7.5.1' not in r:
+              r += section
+          readme.write_text(r, encoding='utf-8')
+          PY
+
+      - name: Commit V7.5.1
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Waveshare-ESP32-S3-Touch-LCD-2.8/src/main.cpp README.md RELEASE_V7_5_1_DIRECTION_FIX.md
+          git commit -m "Fix Waveshare directionLongText build error"
+          git push
