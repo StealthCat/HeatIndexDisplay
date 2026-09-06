@@ -7,9 +7,12 @@
 struct AppConfig {
   String ssid;
   String wifiPassword;
+  String weatherSource = "ambient";
   String applicationKey;
   String apiKey;
   String macAddress;
+  String wuApiKey;
+  String wuStationId;
   String stationName;
   String hostname = DEFAULT_HOSTNAME;
   String timezoneTz = DEFAULT_TIMEZONE_TZ;

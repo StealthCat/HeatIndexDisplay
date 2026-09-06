@@ -154,7 +154,7 @@ void drawFooter() {
   if (!wx.valid) {
     gfx->setTextColor(lastApiError.length() ? rgb565(255, 105, 90) : C_WHITE);
     gfx->setCursor(18, 293);
-    gfx->print(lastApiError.length() ? "Ambient API error" : "Fetching Ambient...");
+    gfx->print(lastApiError.length() ? "Weather API error" : "Fetching weather...");
     return;
   }
 
@@ -182,7 +182,7 @@ void drawWaitingScreen() {
     centerText(setupApName(), 120, 180, 1, rgb565(65, 205, 255));
     centerText("192.168.4.1/config", 120, 206, 2, rgb565(65, 205, 255));
   } else if (WiFi.status() == WL_CONNECTED) {
-    centerText(apiConfigured() ? "AmbientWeather.net" : "API setup needed", 120, 178, 2, rgb565(175, 182, 192));
+    centerText(apiConfigured() ? weatherSourceLabel() : String("API setup needed"), 120, 178, 2, rgb565(175, 182, 192));
     centerText(WiFi.localIP().toString(), 120, 204, 2, rgb565(65, 205, 255));
     centerText("Open /config", 120, 230, 1, rgb565(175, 182, 192));
   } else {

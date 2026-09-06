@@ -15,3 +15,5 @@
 #define WIFI_RETRY_SECONDS        20UL
 
 #define AMBIENT_DEVICES_URL       "https://rt.ambientweather.net/v1/devices"
+#define WUNDERGROUND_CURRENT_URL  "https://api.weather.com/v2/pws/observations/current"
+#define WUNDERGROUND_HISTORY_URL  "https://api.weather.com/v2/pws/history/all"

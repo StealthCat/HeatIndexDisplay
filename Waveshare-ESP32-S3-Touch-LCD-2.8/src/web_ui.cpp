@@ -7,6 +7,7 @@
 #include "display_ui.h"
 #include "time_utils.h"
 #include "weather_math.h"
+#include "weather_source.h"
 #include "wifi_manager.h"
 
 String htmlEscape(const String &in) {
@@ -35,7 +36,7 @@ String pageHead(const String &title) {
   h += F("body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:18px}");
   h += F(".wrap{max-width:760px;margin:auto}.card{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:18px;margin:14px 0}");
   h += F("h1,h2{margin-top:0}.big{font-size:4rem;font-weight:800;line-height:1}.muted{color:#8b949e}");
-  h += F("label{display:block;font-weight:650;margin-top:14px}input{box-sizing:border-box;width:100%;padding:11px;margin-top:5px;background:#0d1117;color:#e6edf3;border:1px solid #484f58;border-radius:8px}");
+  h += F("label{display:block;font-weight:650;margin-top:14px}input,select{box-sizing:border-box;width:100%;padding:11px;margin-top:5px;background:#0d1117;color:#e6edf3;border:1px solid #484f58;border-radius:8px}");
   h += F("button,.btn{display:inline-block;background:#238636;color:white;border:0;border-radius:8px;padding:10px 14px;text-decoration:none;font-weight:650;cursor:pointer;margin:6px 6px 6px 0}");
   h += F(".secondary{background:#30363d}.danger{background:#b62324}.ok{color:#3fb950}.bad{color:#f85149}code{background:#21262d;padding:2px 5px;border-radius:4px}");
   h += F("table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #30363d;text-align:left}");
@@ -108,7 +109,7 @@ void handleRoot() {
     if (lastApiError.length()) {
       html += htmlEscape(lastApiError);
     } else {
-      html += F("Waiting for the first successful AmbientWeather.net poll.");
+      html += F("Waiting for the first successful weather-source poll.");
     }
     html += F("</p>");
   }
@@ -123,12 +124,19 @@ void handleRoot() {
   html += htmlEscape(currentIp());
   html += F("</td></tr>");
 
+  html += F("<tr><th>Source</th><td>");
+  html += htmlEscape(weatherSourceLabel());
+  html += F("</td></tr>");
+
   html += F("<tr><th>Station</th><td>");
   html += htmlEscape(cfg.stationName.length() ? cfg.stationName : String("(auto)"));
   html += F("</td></tr>");
 
-  html += F("<tr><th>MAC</th><td>");
-  html += htmlEscape(cfg.macAddress.length() ? cfg.macAddress : String("(auto)"));
+  html += F("<tr><th>");
+  html += usingAmbientWeather() ? "MAC" : "Station ID";
+  html += F("</th><td>");
+  String stationIdentifier = usingAmbientWeather() ? cfg.macAddress : cfg.wuStationId;
+  html += htmlEscape(stationIdentifier.length() ? stationIdentifier : String("(not set)"));
   html += F("</td></tr>");
 
   html += F("<tr><th>Timezone</th><td><code>");
@@ -139,7 +147,7 @@ void handleRoot() {
   html += String(cfg.pollSeconds);
   html += F(" sec</td></tr>");
 
-  html += F("<tr><th>Ambient API</th><td>");
+  html += F("<tr><th>Weather API</th><td>");
   html += apiConfigured() ? "Configured" : "Not configured";
   html += F("</td></tr>");
 
@@ -168,7 +176,9 @@ void handleRoot() {
 
   html += F("</table></div>");
   html += F("<a class='btn' href='/config'>Configuration</a>");
-  html += F("<a class='btn secondary' href='/discover'>Discover stations</a>");
+  if (usingAmbientWeather()) {
+    html += F("<a class='btn secondary' href='/discover'>Discover stations</a>");
+  }
   html += F("<a class='btn secondary' href='/poll'>Poll now</a>");
   html += F("<a class='btn secondary' href='/status'>JSON</a>");
   html += pageTail();
@@ -183,7 +193,7 @@ void handleConfig() {
 
   if (setupApStarted) {
     html += F("<div class='card'><b>Setup access point active.</b><br>");
-    html += F("Connect to the ESP32 setup network, enter Wi-Fi and Ambient settings below, save, and the device will reboot.</div>");
+    html += F("Connect to the ESP32 setup network, enter Wi-Fi and weather-source settings below, save, and the device will reboot.</div>");
   }
 
   html += F("<form method='post' action='/save'>");
@@ -203,6 +213,16 @@ void handleConfig() {
   html += htmlEscape(cfg.timezoneTz);
   html += F("'></label>");
   html += F("</div>");
+
+  html += F("<div class='card'><h2>Weather source</h2>");
+  html += F("<label>Source<select name='source'>");
+  html += F("<option value='ambient'");
+  if (usingAmbientWeather()) html += F(" selected");
+  html += F(">Ambient Weather</option>");
+  html += F("<option value='wunderground'");
+  if (usingWeatherUnderground()) html += F(" selected");
+  html += F(">Weather Underground</option></select></label>");
+  html += F("<p class='muted'>The selected source is used for current conditions and the historical data behind From Yesterday and Today's High / Low.</p></div>");
 
   html += F("<div class='card'><h2>AmbientWeather.net</h2>");
   html += F("<p class='muted'>Ambient requires both an Application Key and an API Key. Saved secrets are never rendered back into the page.</p>");
@@ -227,6 +247,23 @@ void handleConfig() {
   html += htmlEscape(cfg.macAddress);
   html += F("' placeholder='Leave blank to auto-select first station'></label>");
 
+
+  html += F("<div class='card'><h2>Weather Underground</h2>");
+  html += F("<p class='muted'>Weather Underground uses a PWS Station ID and API key. The firmware requests imperial PWS observations from api.weather.com. Saved secrets are never rendered back into the page.</p>");
+  html += F("<label>API Key<input type='password' name='wuapikey' maxlength='128' placeholder='");
+  if (cfg.wuApiKey.length()) {
+    html += F("Saved — leave blank to keep");
+  } else {
+    html += F("Enter Weather Underground API key");
+  }
+  html += F("'></label>");
+  html += F("<label>PWS Station ID<input name='wustation' maxlength='32' value='");
+  html += htmlEscape(cfg.wuStationId);
+  html += F("' placeholder='Example: KGAEVANS123'></label>");
+  html += F("</div>");
+
+  html += F("<div class='card'><h2>Polling</h2>");
+
   html += F("<label>Poll interval (seconds)<input type='number' min='");
   html += String(MIN_POLL_SECONDS);
   html += F("' max='3600' name='poll' value='");
@@ -245,6 +282,8 @@ void handleConfig() {
   html += F("<div class='card'><h2>Credential management</h2>");
   html += F("<form method='post' action='/clear-ambient' onsubmit=\"return confirm('Clear saved Ambient credentials and station selection?')\">");
   html += F("<button class='danger' type='submit'>Clear Ambient credentials</button></form>");
+  html += F("<form method='post' action='/clear-wunderground' onsubmit=\"return confirm('Clear saved Weather Underground credentials and station ID?')\">");
+  html += F("<button class='danger' type='submit'>Clear Weather Underground credentials</button></form>");
   html += F("<form method='post' action='/factory-reset' onsubmit=\"return confirm('Erase all settings including Wi-Fi?')\">");
   html += F("<button class='danger' type='submit'>Factory reset</button></form>");
   html += F("</div>");
@@ -255,6 +294,7 @@ void handleConfig() {
 
 void handleSave() {
   if (server.hasArg("ssid")) cfg.ssid = server.arg("ssid");
+  if (server.hasArg("source")) cfg.weatherSource = normalizeWeatherSource(server.arg("source"));
   if (server.hasArg("wpass") && server.arg("wpass").length()) cfg.wifiPassword = server.arg("wpass");
   if (server.hasArg("host")) {
     String h = server.arg("host");
@@ -269,6 +309,8 @@ void handleSave() {
   if (server.hasArg("appkey") && server.arg("appkey").length()) cfg.applicationKey = server.arg("appkey");
   if (server.hasArg("apikey") && server.arg("apikey").length()) cfg.apiKey = server.arg("apikey");
   if (server.hasArg("mac")) cfg.macAddress = normalizeMac(server.arg("mac"));
+  if (server.hasArg("wuapikey") && server.arg("wuapikey").length()) cfg.wuApiKey = server.arg("wuapikey");
+  if (server.hasArg("wustation")) cfg.wuStationId = normalizeStationId(server.arg("wustation"));
   if (server.hasArg("poll")) {
     uint32_t p = (uint32_t)server.arg("poll").toInt();
     if (p < MIN_POLL_SECONDS) p = MIN_POLL_SECONDS;
@@ -302,6 +344,15 @@ void handleClearAmbient() {
   server.send(303);
 }
 
+void handleClearWunderground() {
+  cfg.wuApiKey = "";
+  cfg.wuStationId = "";
+  cfg.stationName = "";
+  saveConfig();
+  server.sendHeader("Location", "/config");
+  server.send(303);
+}
+
 void handleFactoryReset() {
   prefs.begin("heatidx", false);
   prefs.clear();
@@ -315,14 +366,14 @@ void handleFactoryReset() {
 }
 
 void handlePollNow() {
-  bool ok = pollAmbient(true);
+  bool ok = pollWeatherSource(true);
 
   if (ok) {
     server.sendHeader("Location", "/");
     server.send(303);
   } else {
     String html = pageHead("Poll failed");
-    html += F("<div class='card'><h1>Ambient poll failed</h1><p class='bad'>");
+    html += F("<div class='card'><h1>Weather poll failed</h1><p class='bad'>");
     html += htmlEscape(lastApiError);
     html += F("</p><a class='btn secondary' href='/'>Back</a></div>");
     html += pageTail();
@@ -334,7 +385,7 @@ void handleDiscover() {
   String html = pageHead("Discover stations");
   html += F("<h1>Ambient stations</h1>");
 
-  if (!apiConfigured()) {
+  if (!ambientConfigured()) {
     html += F("<div class='card'><p>Configure your Ambient keys first.</p>");
     html += F("<a class='btn' href='/config'>Configuration</a></div>");
     html += pageTail();
@@ -403,7 +454,7 @@ void handleSelect() {
   wx.fromYesterdayF = NAN;
   wx.todayHighF = NAN;
   wx.todayLowF = NAN;
-  pollAmbient(true);
+  pollWeatherSource(true);
   server.sendHeader("Location", "/");
   server.send(303);
 }
@@ -417,9 +468,11 @@ String jsonStatus() {
   s += ",\"setup_ap\":";
   s += (setupApStarted ? "true" : "false");
   s += ",\"ip\":\"" + currentIp() + "\"";
+  s += ",\"weather_source\":\"" + normalizeWeatherSource(cfg.weatherSource) + "\"";
   s += ",\"api_configured\":";
   s += (apiConfigured() ? "true" : "false");
   s += ",\"station_mac\":\"" + cfg.macAddress + "\"";
+  s += ",\"wunderground_station_id\":\"" + cfg.wuStationId + "\"";
   s += ",\"station_name\":\"" + cfg.stationName + "\"";
   s += ",\"poll_seconds\":" + String(cfg.pollSeconds);
   s += ",\"stale_seconds\":" + String(cfg.staleSeconds);
@@ -473,6 +526,7 @@ void startWebServer() {
   server.on("/select", HTTP_POST, handleSelect);
   server.on("/poll", HTTP_GET, handlePollNow);
   server.on("/clear-ambient", HTTP_POST, handleClearAmbient);
+  server.on("/clear-wunderground", HTTP_POST, handleClearWunderground);
   server.on("/factory-reset", HTTP_POST, handleFactoryReset);
   server.onNotFound([](){ server.send(404, "text/plain", "Not found"); });
   server.begin();

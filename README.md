@@ -1,21 +1,21 @@
 # HeatIndexDisplay
 
-ESP32-S3 apparent-temperature displays for an Ambient Weather WS-5000 station.
+ESP32-S3 apparent-temperature displays for personal weather-station data from Ambient Weather or Weather Underground.
 
 The firmware automatically shows **Heat Index** in hot conditions and **Wind Chill** when NWS wind-chill conditions apply. It supports two production targets:
 
 - **LILYGO T-Display S3** — 170x320 ST7789, native LovyanGFX Parallel8 driver
 - **Waveshare ESP32-S3 Touch LCD 2.8** — 240x320 ST7789 SPI
 
-## Current release: V7.5.1
+## Current release: V7.7
 
-V7.5.1 includes the final approved display layouts, asset-based RGB565 iconography, Ambient current/history polling, From Yesterday and Today's High/Low, first-boot setup AP, persistent web configuration, optional compile-time Wi-Fi/Ambient defaults, and the Waveshare `directionLongText()` compile fix.
+V7.7 keeps the approved production layouts and adds a selectable weather-data provider. Both boards can now use either Ambient Weather or Weather Underground PWS current/history APIs while retaining From Yesterday, Today's High/Low, persistent web configuration, first-boot defaults, and the V7.6 modular architecture.
 
 ### Compile-time defaults
 
-Each board project contains `include/compile_defaults.h`. You may bake in Wi-Fi and AmbientWeather.net credentials there. Those values seed NVS **only on a blank device**. After that, changes made in the `/config` web panel persist and override the compiled values across reboots. Factory Reset clears NVS and allows the compiled defaults to seed again.
+Each board project contains `include/compile_defaults.h`. You may bake in Wi-Fi plus Ambient Weather or Weather Underground credentials there. Those values seed NVS **only on a blank device**. After that, changes made in the `/config` web panel persist and override the compiled values across reboots. Factory Reset clears NVS and allows the compiled defaults to seed again.
 
-The repository intentionally ships with all credential fields blank. **Do not commit real Wi-Fi passwords or Ambient API keys to this public repository.**
+The repository intentionally ships with all credential fields blank. **Do not commit real Wi-Fi passwords or weather API keys to this public repository.**
 
 ## Build
 
@@ -39,7 +39,7 @@ For a clean Windows build, run the included `CLEAN_BUILD_WINDOWS.bat` from the s
 
 With no stored Wi-Fi configuration, the device starts a `HeatIndex-Setup-XXXX` access point. Connect to it and open `http://192.168.4.1/config`.
 
-The configuration panel controls Wi-Fi, hostname, timezone, Ambient Application Key, Ambient API Key, station MAC, polling interval, and stale-data threshold. Saved secrets are not rendered back into the page.
+The configuration panel controls Wi-Fi, hostname, timezone, weather source, Ambient credentials/station MAC, Weather Underground API key/PWS Station ID, polling interval, and stale-data threshold. Saved secrets are not rendered back into the page.
 
 ## Production Release V7.5
 
@@ -53,3 +53,8 @@ Restores the Waveshare `directionLongText()` helper accidentally removed during 
 ## Production Release V7.6
 
 Both board projects are now split into normal `.cpp`/`.h` modules by functional area. See `ARCHITECTURE.md` and `RELEASE_V7_6_MODULAR_REFACTOR.md`.
+
+
+## Production Release V7.7
+
+Adds a web-selectable **Ambient Weather / Weather Underground** source. Weather Underground uses the official PWS current endpoint and per-day historical observations to preserve the existing display metrics. See `RELEASE_V7_7_WEATHER_SOURCES.md`.

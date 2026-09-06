@@ -1,11 +1,11 @@
 #include <WiFi.h>
 #include "app_state.h"
 #include "app_controller.h"
-#include "ambient_weather.h"
 #include "config_store.h"
 #include "display_ui.h"
 #include "ui_state.h"
 #include "web_ui.h"
+#include "weather_source.h"
 #include "wifi_manager.h"
 #include "config.h"
 
@@ -22,11 +22,13 @@ void appSetup() {
     return;
   }
   if (!apiConfigured()) {
-    lastApiError = "Configure Ambient API credentials at /config";
+    lastApiError = "Configure ";
+    lastApiError += weatherSourceLabel();
+    lastApiError += " credentials at /config";
     drawWaitingScreen();
     return;
   }
-  pollAmbient(true);
+  pollWeatherSource(true);
 }
 
 void appLoop() {
@@ -50,12 +52,10 @@ void appLoop() {
   } else if (apiConfigured()) {
     if (lastPollMs == 0 || nowMs - lastPollMs >= cfg.pollSeconds * 1000UL) {
       lastPollMs = nowMs;
-      pollAmbient(true);
+      pollWeatherSource(true);
     }
   }
 
-  // Check UI state periodically, but only write to the display when the
-  // visible footer state actually changed.
   if (nowMs - lastUiStateCheckMs >= 1000UL) {
     lastUiStateCheckMs = nowMs;
     String newKey = footerStateKey();
@@ -65,7 +65,5 @@ void appLoop() {
     }
   }
 
-  // 20 ms keeps the web UI responsive without spinning the application
-  // loop roughly 500 times per second while idle.
   delay(20);
 }

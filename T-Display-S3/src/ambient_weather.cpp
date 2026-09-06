@@ -47,7 +47,7 @@ bool fetchAmbientDevices(DynamicJsonDocument &doc, String &errorOut) {
     errorOut = "Wi-Fi is not connected";
     return false;
   }
-  if (!apiConfigured()) {
+  if (!ambientConfigured()) {
     errorOut = "Ambient Application Key and API Key are not configured";
     return false;
   }

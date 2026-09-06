@@ -9,12 +9,42 @@ String normalizeMac(String mac) {
   return mac;
 }
 
+String normalizeStationId(String stationId) {
+  stationId.trim();
+  stationId.toUpperCase();
+  return stationId;
+}
+
+String normalizeWeatherSource(String source) {
+  source.trim();
+  source.toLowerCase();
+  if (source == "wunderground" || source == "wu" || source == "weatherunderground") {
+    return "wunderground";
+  }
+  return "ambient";
+}
+
+bool usingAmbientWeather() {
+  return normalizeWeatherSource(cfg.weatherSource) == "ambient";
+}
+
+bool usingWeatherUnderground() {
+  return normalizeWeatherSource(cfg.weatherSource) == "wunderground";
+}
+
+String weatherSourceLabel() {
+  return usingWeatherUnderground() ? String("Weather Underground") : String("Ambient Weather");
+}
+
 void applyCompileTimeDefaults() {
   cfg.ssid = String(COMPILED_WIFI_SSID);
   cfg.wifiPassword = String(COMPILED_WIFI_PASSWORD);
+  cfg.weatherSource = normalizeWeatherSource(String(COMPILED_WEATHER_SOURCE));
   cfg.applicationKey = String(COMPILED_AMBIENT_APPLICATION_KEY);
   cfg.apiKey = String(COMPILED_AMBIENT_API_KEY);
   cfg.macAddress = normalizeMac(String(COMPILED_AMBIENT_STATION_MAC));
+  cfg.wuApiKey = String(COMPILED_WUNDERGROUND_API_KEY);
+  cfg.wuStationId = normalizeStationId(String(COMPILED_WUNDERGROUND_STATION_ID));
   cfg.stationName = "";
 
   String compiledHost = String(COMPILED_HOSTNAME);
@@ -40,27 +70,33 @@ void loadConfig() {
 
   const bool initialized = prefs.getBool("cfginit", false);
 
-  // Migration support for firmware versions before V7.4. If any legacy
-  // setting key exists, preserve that stored configuration instead of
-  // overwriting it with newly compiled defaults.
+  // Migration support for firmware versions before V7.4/V7.7. Existing
+  // Ambient-only installations default to Ambient Weather when no source key
+  // is present, preserving their current behavior and credentials.
   const bool legacyConfigPresent =
-      prefs.isKey("ssid")   ||
-      prefs.isKey("wpass")  ||
-      prefs.isKey("appkey") ||
-      prefs.isKey("apikey") ||
-      prefs.isKey("mac")    ||
-      prefs.isKey("stname") ||
-      prefs.isKey("host")   ||
-      prefs.isKey("tz")     ||
-      prefs.isKey("poll")   ||
+      prefs.isKey("ssid")      ||
+      prefs.isKey("wpass")     ||
+      prefs.isKey("source")    ||
+      prefs.isKey("appkey")    ||
+      prefs.isKey("apikey")    ||
+      prefs.isKey("mac")       ||
+      prefs.isKey("wuapikey")  ||
+      prefs.isKey("wustation") ||
+      prefs.isKey("stname")    ||
+      prefs.isKey("host")      ||
+      prefs.isKey("tz")        ||
+      prefs.isKey("poll")      ||
       prefs.isKey("stale");
 
   if (initialized || legacyConfigPresent) {
     cfg.ssid = prefs.getString("ssid", "");
     cfg.wifiPassword = prefs.getString("wpass", "");
+    cfg.weatherSource = normalizeWeatherSource(prefs.getString("source", "ambient"));
     cfg.applicationKey = prefs.getString("appkey", "");
     cfg.apiKey = prefs.getString("apikey", "");
-    cfg.macAddress = prefs.getString("mac", "");
+    cfg.macAddress = normalizeMac(prefs.getString("mac", ""));
+    cfg.wuApiKey = prefs.getString("wuapikey", "");
+    cfg.wuStationId = normalizeStationId(prefs.getString("wustation", ""));
     cfg.stationName = prefs.getString("stname", "");
     cfg.hostname = prefs.getString("host", DEFAULT_HOSTNAME);
     cfg.timezoneTz = prefs.getString("tz", DEFAULT_TIMEZONE_TZ);
@@ -73,7 +109,6 @@ void loadConfig() {
     if (cfg.pollSeconds < MIN_POLL_SECONDS) cfg.pollSeconds = MIN_POLL_SECONDS;
     if (cfg.staleSeconds < MIN_STALE_SECONDS) cfg.staleSeconds = MIN_STALE_SECONDS;
 
-    // Mark migrated pre-V7.4 NVS as initialized without changing its values.
     if (!initialized && legacyConfigPresent) {
       saveConfig();
     }
@@ -82,9 +117,6 @@ void loadConfig() {
 
   prefs.end();
 
-  // Truly blank NVS: seed the compile-time defaults exactly once, then store
-  // them persistently. From this point forward the web configuration is the
-  // source of truth until Factory Reset clears NVS.
   applyCompileTimeDefaults();
   saveConfig();
 
@@ -96,9 +128,12 @@ void saveConfig() {
   prefs.putBool("cfginit", true);
   prefs.putString("ssid", cfg.ssid);
   prefs.putString("wpass", cfg.wifiPassword);
+  prefs.putString("source", normalizeWeatherSource(cfg.weatherSource));
   prefs.putString("appkey", cfg.applicationKey);
   prefs.putString("apikey", cfg.apiKey);
-  prefs.putString("mac", cfg.macAddress);
+  prefs.putString("mac", normalizeMac(cfg.macAddress));
+  prefs.putString("wuapikey", cfg.wuApiKey);
+  prefs.putString("wustation", normalizeStationId(cfg.wuStationId));
   prefs.putString("stname", cfg.stationName);
   prefs.putString("host", cfg.hostname);
   prefs.putString("tz", cfg.timezoneTz);
@@ -107,6 +142,14 @@ void saveConfig() {
   prefs.end();
 }
 
-bool apiConfigured() {
+bool ambientConfigured() {
   return cfg.applicationKey.length() && cfg.apiKey.length();
+}
+
+bool weatherUndergroundConfigured() {
+  return cfg.wuApiKey.length() && cfg.wuStationId.length();
+}
+
+bool apiConfigured() {
+  return usingWeatherUnderground() ? weatherUndergroundConfigured() : ambientConfigured();
 }

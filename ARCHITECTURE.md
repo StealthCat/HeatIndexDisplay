@@ -10,7 +10,9 @@ board-specific implementation is `src/display_ui.cpp`.
 | `app_controller.*` | Startup and main-loop orchestration |
 | `config_store.*` | Preferences/NVS persistence and compile-default migration |
 | `weather_math.*` | Heat index, wind chill, dew point, risk labels and wind direction |
+| `weather_source.*` | Selects the configured provider and dispatches polling |
 | `ambient_weather.*` | AmbientWeather REST polling, JSON parsing, history summary and rate limiting |
+| `wunderground_weather.*` | Weather Underground PWS current/history polling and JSON parsing |
 | `time_utils.*` | Observation age, stale detection and date/time formatting |
 | `wifi_manager.*` | Wi-Fi STA/AP connection and setup-AP behavior |
 | `web_ui.*` | Configuration/status HTTP routes and HTML UI |
