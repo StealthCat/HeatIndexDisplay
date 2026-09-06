@@ -1,0 +1,5 @@
+#include "parts/common01.inc"
+#include "parts/common02.inc"
+#include "parts/common03.inc"
+#include "parts/common04.inc"
+#include "display.inc"

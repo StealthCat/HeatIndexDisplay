@@ -1,79 +1,44 @@
-# WS-5000 AmbientWeather.net Heat Index Firmware (Mockup-Matched)
+# HeatIndexDisplay
 
-These are updated cloud/API firmware projects for:
+ESP32-S3 apparent-temperature displays for an Ambient Weather WS-5000 station.
 
-- T-Display-S3
-- Waveshare-ESP32-S3-Touch-LCD-2.8
+The firmware automatically shows **Heat Index** in hot conditions and **Wind Chill** when NWS wind-chill conditions apply. It supports two production targets:
 
-This revision changes the live display layout so it visually follows the final
-mockup: no logo, no slogan, dark UI, bold red/orange heat-index panel, station
-name at the top, and a cleaner footer.
+- **LILYGO T-Display S3** — 170x320 ST7789, native LovyanGFX Parallel8 driver
+- **Waveshare ESP32-S3 Touch LCD 2.8** — 240x320 ST7789 SPI
 
+## Current release: V7.4
 
-## Wind chill update
+V7.4 includes the final approved display layouts, Ambient current/history polling, From Yesterday and Today's High/Low, first-boot setup AP, persistent web configuration, and optional compile-time Wi-Fi/Ambient defaults.
 
-This revision automatically displays **WIND CHILL** instead of **HEAT INDEX** whenever NWS wind-chill conditions apply (temperature at or below 50 F and wind above 3 mph). It also exposes `wind_chill_f`, `apparent_f`, and `mode` in the JSON status output.
+### Compile-time defaults
 
+Each board project contains `include/compile_defaults.h`. You may bake in Wi-Fi and AmbientWeather.net credentials there. Those values seed NVS **only on a blank device**. After that, changes made in the `/config` web panel persist and override the compiled values across reboots. Factory Reset clears NVS and allows the compiled defaults to seed again.
 
-## Production maintenance update — 2026-09-05
+The repository intentionally ships with all credential fields blank. **Do not commit real Wi-Fi passwords or Ambient API keys to this public repository.**
 
-This release includes the compiler fixes discovered during Wokwi validation.
-See `PRODUCTION_UPDATE.md` for details. Emulator-specific software-SPI changes
-are deliberately not used on the physical boards.
+## Build
 
+Open either board directory as a PlatformIO project, or run:
 
-## Performance-optimized production release
+```bash
+cd T-Display-S3
+pio run
+```
 
-This release avoids unnecessary footer/full-screen redraws and uses a 20 ms
-idle loop delay. See `PERFORMANCE_UPDATE.md`.
+or:
 
+```bash
+cd Waveshare-ESP32-S3-Touch-LCD-2.8
+pio run
+```
 
-## Production Performance V2
+For a clean Windows build, run the included `CLEAN_BUILD_WINDOWS.bat` from the selected board directory.
 
-This package adds the standard-C++ forward declarations required by the
-performance helpers. See `V2_COMPILE_FIX.md`.
+## Configuration
 
+With no stored Wi-Fi configuration, the device starts a `HeatIndex-Setup-XXXX` access point. Connect to it and open `http://192.168.4.1/config`.
 
-## Mockup Match V3
+The configuration panel controls Wi-Fi, hostname, timezone, Ambient Application Key, Ambient API Key, station MAC, polling interval, and stale-data threshold. Saved secrets are not rendered back into the page.
 
-The physical UI now implements the approved heat-index and wind-chill mockup layouts. See `MOCKUP_MATCH_V3.md`.
-
-
-## Mockup Match V4
-
-Standalone header clocks are removed. Observation/update timestamps remain in the footer.
-
-
-## Mockup Match V5
-
-Waveshare lower-card alignment has been corrected. See `MOCKUP_MATCH_V5.md`.
-
-
-## Mockup Match V6
-
-The T-Display normal weather header contains no standalone current-time clock. The footer observation timestamp remains.
-
-
-## Production Release V7
-
-This package contains the final approved production layout, including the finalized Waveshare lower-card alignment. See `RELEASE_V7.md`.
-
-
-## V7.1 Arduino_GFX fix
-
-The Waveshare build now pins `GFX Library for Arduino@1.6.0`. Delete the entire `.pio` directory before the first V7.1 build. See `V7_1_GFX_FIX.md` in the combined release.
-
-
-## Production Release V7.2
-
-Adds missing standard-C++ forward declarations required by PlatformIO. See `RELEASE_V7_2.md`.
-
-
-## Production Release V7.3
-
-The T-Display-S3 now uses a direct LovyanGFX hardware profile and no longer depends on LilyGo-display-library. Remove `.pio` before the first build.
-
-
-## Production Release V7.4
-
-Both boards now support optional compile-time first-boot Wi-Fi and AmbientWeather.net defaults while preserving persistent web-configuration overrides. See `RELEASE_V7_4.md`.
+See [RELEASE_V7_4.md](RELEASE_V7_4.md) for release details.
