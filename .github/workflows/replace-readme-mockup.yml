@@ -1,0 +1,34 @@
+name: Replace README mockup asset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/replace-readme-mockup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore verified mockup image from Git blob
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p docs
+          gh api repos/${GITHUB_REPOSITORY}/git/blobs/2ad9db4acf86a5f81aaed1120424cc527e835344 --jq .content | tr -d '\n' | base64 -d > docs/weather_dashboard_device_comparison.webp
+          test "$(wc -c < docs/weather_dashboard_device_comparison.webp)" -eq 11376
+          file docs/weather_dashboard_device_comparison.webp | grep -q 'Web/P image'
+
+      - name: Commit corrected mockup asset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/weather_dashboard_device_comparison.webp
+          git commit -m "Replace README mockup with valid image asset"
+          git push
