@@ -7,6 +7,12 @@ The firmware automatically shows **Heat Index** in hot conditions and **Wind Chi
 - **LILYGO T-Display S3** — 170x320 ST7789, native LovyanGFX Parallel8 driver
 - **Waveshare ESP32-S3 Touch LCD 2.8** — 240x320 ST7789 SPI
 
+## Display mockup
+
+The production UI is designed to match the following Heat Index and Wind Chill layouts on both supported displays:
+
+![HeatIndexDisplay production mockup showing T-Display S3 and Waveshare 2.8-inch displays in Heat Index and Wind Chill modes](docs/weather_dashboard_device_comparison.webp)
+
 ## Current release: V7.7
 
 V7.7 keeps the approved production layouts and adds a selectable weather-data provider. Both boards can now use either Ambient Weather or Weather Underground PWS current/history APIs while retaining From Yesterday, Today's High/Low, persistent web configuration, first-boot defaults, and the V7.6 modular architecture.
