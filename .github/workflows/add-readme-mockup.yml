@@ -1,0 +1,33 @@
+name: Add README mockup asset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/add-readme-mockup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore mockup image from Git blob
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p docs
+          gh api repos/${GITHUB_REPOSITORY}/git/blobs/d443eba9b71c5855d90ad23ec1927125f163c650 --jq .content | tr -d '\n' | base64 -d > docs/weather_dashboard_device_comparison.webp
+          file docs/weather_dashboard_device_comparison.webp
+
+      - name: Commit mockup asset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/weather_dashboard_device_comparison.webp
+          git commit -m "Add production display mockup image"
+          git push
