@@ -246,7 +246,7 @@ void handleConfig() {
   html += F("<label>Station MAC address<input name='mac' maxlength='32' value='");
   html += htmlEscape(cfg.macAddress);
   html += F("' placeholder='Leave blank to auto-select first station'></label>");
-
+  html += F("</div>");
 
   html += F("<div class='card'><h2>Weather Underground</h2>");
   html += F("<p class='muted'>Weather Underground uses a PWS Station ID and API key. The firmware requests imperial PWS observations from api.weather.com. Saved secrets are never rendered back into the page.</p>");

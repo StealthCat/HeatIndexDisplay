@@ -117,8 +117,10 @@ static bool fetchHistoryDate(const String &dateYmd, DynamicJsonDocument &doc, St
 
   StaticJsonDocument<256> filter;
   filter["observations"][0]["epoch"] = true;
-  filter["observations"][0]["imperial"]["temp"] = true;
-  filter["observations"][0]["imperial"]["windGust"] = true;
+  filter["observations"][0]["imperial"]["tempHigh"] = true;
+  filter["observations"][0]["imperial"]["tempLow"] = true;
+  filter["observations"][0]["imperial"]["tempAvg"] = true;
+  filter["observations"][0]["imperial"]["windgustHigh"] = true;
 
   DeserializationError jsonErr = deserializeJson(
     doc,
@@ -272,13 +274,12 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
 
   for (JsonObject point : todayDoc["observations"].as<JsonArray>()) {
     JsonObject imperial = point["imperial"].as<JsonObject>();
-    float pointTemp = wuFloat(imperial["temp"]);
-    float pointGust = wuFloat(imperial["windGust"]);
+    float pointHigh = wuFloat(imperial["tempHigh"]);
+    float pointLow = wuFloat(imperial["tempLow"]);
+    float pointGust = wuFloat(imperial["windgustHigh"]);
 
-    if (isfinite(pointTemp)) {
-      if (!isfinite(high) || pointTemp > high) high = pointTemp;
-      if (!isfinite(low) || pointTemp < low) low = pointTemp;
-    }
+    if (isfinite(pointHigh) && (!isfinite(high) || pointHigh > high)) high = pointHigh;
+    if (isfinite(pointLow) && (!isfinite(low) || pointLow < low)) low = pointLow;
     if (isfinite(pointGust) && (!isfinite(maxGust) || pointGust > maxGust)) {
       maxGust = pointGust;
     }
@@ -286,9 +287,8 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
 
   todayDoc.clear();
 
-  DynamicJsonDocument yesterdayDoc(32768);
   String yesterdayError;
-  if (!fetchHistoryDate(yesterdayYmd, yesterdayDoc, yesterdayError)) {
+  if (!fetchHistoryDate(yesterdayYmd, todayDoc, yesterdayError)) {
     errorOut = yesterdayError;
     return false;
   }
@@ -296,10 +296,10 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
   float yesterday = NAN;
   uint64_t bestDifference = UINT64_MAX;
 
-  for (JsonObject point : yesterdayDoc["observations"].as<JsonArray>()) {
+  for (JsonObject point : todayDoc["observations"].as<JsonArray>()) {
     uint64_t epoch = point["epoch"] | 0ULL;
     JsonObject imperial = point["imperial"].as<JsonObject>();
-    float pointTemp = wuFloat(imperial["temp"]);
+    float pointTemp = wuFloat(imperial["tempAvg"]);
     if (epoch == 0 || !isfinite(pointTemp)) continue;
 
     uint64_t pointMs = epoch * 1000ULL;
