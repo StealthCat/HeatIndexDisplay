@@ -48,3 +48,8 @@ The display iconography uses fixed RGB565 asset sprites in `include/ui_assets.h`
 ## Production Release V7.5.1
 
 Restores the Waveshare `directionLongText()` helper accidentally removed during the V7.5 icon conversion and adds an explicit forward declaration. See `RELEASE_V7_5_1_DIRECTION_FIX.md`.
+
+
+## Production Release V7.6
+
+Both board projects are now split into normal `.cpp`/`.h` modules by functional area. See `ARCHITECTURE.md` and `RELEASE_V7_6_MODULAR_REFACTOR.md`.
