@@ -7,9 +7,9 @@ The firmware automatically shows **Heat Index** in hot conditions and **Wind Chi
 - **LILYGO T-Display S3** — 170x320 ST7789, native LovyanGFX Parallel8 driver
 - **Waveshare ESP32-S3 Touch LCD 2.8** — 240x320 ST7789 SPI
 
-## Current release: V7.4
+## Current release: V7.5.1
 
-V7.4 includes the final approved display layouts, Ambient current/history polling, From Yesterday and Today's High/Low, first-boot setup AP, persistent web configuration, and optional compile-time Wi-Fi/Ambient defaults.
+V7.5.1 includes the final approved display layouts, asset-based RGB565 iconography, Ambient current/history polling, From Yesterday and Today's High/Low, first-boot setup AP, persistent web configuration, optional compile-time Wi-Fi/Ambient defaults, and the Waveshare `directionLongText()` compile fix.
 
 ### Compile-time defaults
 
@@ -41,9 +41,10 @@ With no stored Wi-Fi configuration, the device starts a `HeatIndex-Setup-XXXX` a
 
 The configuration panel controls Wi-Fi, hostname, timezone, Ambient Application Key, Ambient API Key, station MAC, polling interval, and stale-data threshold. Saved secrets are not rendered back into the page.
 
-See [RELEASE_V7_4.md](RELEASE_V7_4.md) for release details.
-
-
 ## Production Release V7.5
 
-The display iconography now uses fixed RGB565 asset sprites in `include/ui_assets.h` to more closely match the approved mockup.
+The display iconography uses fixed RGB565 asset sprites in `include/ui_assets.h` to more closely match the approved mockup.
+
+## Production Release V7.5.1
+
+Restores the Waveshare `directionLongText()` helper accidentally removed during the V7.5 icon conversion and adds an explicit forward declaration. See `RELEASE_V7_5_1_DIRECTION_FIX.md`.
