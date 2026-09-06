@@ -14,8 +14,9 @@ Supported providers:
 Weather Underground configuration requires a PWS Station ID and API key. The
 firmware requests imperial units with decimal precision and continues to run
 the same local NWS heat-index/wind-chill calculations used for Ambient data.
-Historical PWS observations are used to calculate Today's High/Low, the maximum
-daily gust, and the temperature closest to the same time yesterday.
+Historical PWS records use `tempHigh`, `tempLow`, `tempAvg`, and `windgustHigh`
+to calculate Today's High/Low, maximum daily gust, and the observation nearest
+the same time yesterday.
 
 The selected provider, credentials, and station identifier are persisted in
 Preferences/NVS. `compile_defaults.h` now supports first-boot defaults for the
