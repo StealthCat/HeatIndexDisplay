@@ -10,6 +10,7 @@
 #include <math.h>
 #include "config.h"
 #include "compile_defaults.h"
+#include "ui_assets.h"
 
 WebServer server(80);
 Preferences prefs;
@@ -1456,66 +1457,23 @@ RiskStyle riskFor(float apparentF) {
   return {"NORMAL", rgb565(35, 130, 75), rgb565(15, 82, 42)};
 }
 
-void drawWiFiIcon(int x, int y, uint16_t color) {
-  display.drawArc(x, y, 14, 10, 215, 325, color);
-  display.drawArc(x, y, 10, 7, 220, 320, color);
-  display.drawArc(x, y, 6, 4, 225, 315, color);
-  display.fillCircle(x, y + 4, 2, color);
+static void drawIconBitmap(int x, int y, const uint16_t *icon) {
+  for (int iy = 0; iy < UI_ICON_H; iy++) {
+    for (int ix = 0; ix < UI_ICON_W; ix++) {
+      uint16_t px = pgm_read_word(&icon[iy * UI_ICON_W + ix]);
+      if (px != UI_ICON_TRANSPARENT) display.drawPixel(x + ix, y + iy, px);
+    }
+  }
 }
 
-void drawThermometer(int x, int y, uint16_t color) {
-  display.drawRoundRect(x, y, 8, 25, 4, color);
-  display.fillCircle(x + 4, y + 25, 6, color);
-  display.fillRect(x + 3, y + 9, 3, 16, color);
-}
-
-void drawDrop(int x, int y, uint16_t color) {
-  display.fillTriangle(x, y, x - 7, y + 15, x + 7, y + 15, color);
-  display.fillCircle(x, y + 15, 7, color);
-}
-
-void drawWindIcon(int x, int y, uint16_t color) {
-  display.drawLine(x, y, x + 12, y, color);
-  display.drawLine(x + 7, y - 3, x + 12, y, color);
-  display.drawLine(x + 7, y + 3, x + 12, y, color);
-  display.drawLine(x, y + 8, x + 16, y + 8, color);
-  display.drawLine(x + 11, y + 5, x + 16, y + 8, color);
-  display.drawLine(x + 11, y + 11, x + 16, y + 8, color);
-}
-
-void drawCompassIcon(int x, int y, uint16_t color) {
-  display.drawCircle(x, y, 10, color);
-  display.drawLine(x, y + 8, x, y - 7, color);
-  display.drawLine(x, y - 7, x - 4, y + 1, color);
-  display.drawLine(x, y - 7, x + 4, y + 1, color);
-}
-
-void drawLeafIcon(int x, int y, uint16_t color) {
-  display.fillEllipse(x, y, 8, 5, color);
-  display.drawLine(x - 7, y + 7, x + 6, y - 5, color);
-}
-
-void drawTrendIcon(int x, int y, uint16_t color) {
-  display.drawLine(x, y + 12, x, y, color);
-  display.drawLine(x, y + 12, x + 15, y + 12, color);
-  display.drawLine(x + 2, y + 10, x + 7, y + 6, color);
-  display.drawLine(x + 7, y + 6, x + 11, y + 8, color);
-  display.drawLine(x + 11, y + 8, x + 16, y + 2, color);
-  display.drawLine(x + 12, y + 2, x + 16, y + 2, color);
-  display.drawLine(x + 16, y + 2, x + 16, y + 6, color);
-}
-
-void drawSunIcon(int x, int y, uint16_t color) {
-  display.fillCircle(x, y, 6, color);
-  display.drawLine(x, y - 11, x, y - 8, color);
-  display.drawLine(x, y + 8, x, y + 11, color);
-  display.drawLine(x - 11, y, x - 8, y, color);
-  display.drawLine(x + 8, y, x + 11, y, color);
-  display.drawLine(x - 8, y - 8, x - 6, y - 6, color);
-  display.drawLine(x + 6, y + 6, x + 8, y + 8, color);
-  display.drawLine(x - 8, y + 8, x - 6, y + 6, color);
-  display.drawLine(x + 6, y - 6, x + 8, y - 8, color);
-}
+void drawWiFiIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_WIFI); }
+void drawThermometer(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x, y, ICON_THERMOMETER); }
+void drawDrop(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y, ICON_DROP); }
+void drawWindIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x, y - 2, ICON_WIND); }
+void drawCompassIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_COMPASS); }
+void drawLeafIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_LEAF); }
+void drawTrendIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x, y, ICON_TREND); }
+void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
 
 void drawMetricCard(int x, int y, int w, int h) {
   uint16_t bg = rgb565(2, 25, 43);

@@ -42,3 +42,8 @@ With no stored Wi-Fi configuration, the device starts a `HeatIndex-Setup-XXXX` a
 The configuration panel controls Wi-Fi, hostname, timezone, Ambient Application Key, Ambient API Key, station MAC, polling interval, and stale-data threshold. Saved secrets are not rendered back into the page.
 
 See [RELEASE_V7_4.md](RELEASE_V7_4.md) for release details.
+
+
+## Production Release V7.5
+
+The display iconography now uses fixed RGB565 asset sprites in `include/ui_assets.h` to more closely match the approved mockup.

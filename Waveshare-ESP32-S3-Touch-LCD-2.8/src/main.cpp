@@ -10,6 +10,7 @@
 #include <math.h>
 #include "config.h"
 #include "compile_defaults.h"
+#include "ui_assets.h"
 
 WebServer server(80);
 Preferences prefs;
@@ -1402,55 +1403,22 @@ void centerText(const String &text, int centerX, int baselineY, uint8_t size, ui
   gfx->print(text);
 }
 
-void drawWiFiIcon(int x, int y, uint16_t color) {
-  gfx->drawCircle(x, y, 2, color);
-  gfx->drawArc(x, y, 14, 14, 220, 320, color);
-  gfx->drawArc(x, y, 10, 10, 220, 320, color);
-  gfx->drawArc(x, y, 6, 6, 220, 320, color);
+static void drawIconBitmap(int x, int y, const uint16_t *icon) {
+  for (int iy = 0; iy < UI_ICON_H; iy++) {
+    for (int ix = 0; ix < UI_ICON_W; ix++) {
+      uint16_t px = pgm_read_word(&icon[iy * UI_ICON_W + ix]);
+      if (px != UI_ICON_TRANSPARENT) gfx->drawPixel(x + ix, y + iy, px);
+    }
+  }
 }
 
-void drawThermometer(int x, int y, uint16_t color) {
-  gfx->drawRoundRect(x, y, 10, 30, 5, color);
-  gfx->fillCircle(x + 5, y + 30, 7, color);
-  gfx->fillRect(x + 4, y + 10, 3, 20, color);
-}
-
-void drawDrop(int x, int y, uint16_t color) {
-  gfx->fillTriangle(x, y, x - 9, y + 18, x + 9, y + 18, color);
-  gfx->fillCircle(x, y + 18, 9, color);
-}
-
-void drawLeaf(int x, int y, uint16_t color) {
-  gfx->drawCircle(x, y, 9, color);
-  gfx->drawLine(x - 6, y + 6, x + 7, y - 7, color);
-  gfx->drawLine(x + 1, y + 1, x + 8, y + 8, color);
-}
-
-void drawTrend(int x, int y, uint16_t color) {
-  gfx->drawLine(x, y + 16, x, y, color);
-  gfx->drawLine(x, y + 16, x + 18, y + 16, color);
-  gfx->drawLine(x + 2, y + 12, x + 7, y + 8, color);
-  gfx->drawLine(x + 7, y + 8, x + 12, y + 10, color);
-  gfx->drawLine(x + 12, y + 10, x + 18, y + 2, color);
-  gfx->drawLine(x + 14, y + 2, x + 18, y + 2, color);
-  gfx->drawLine(x + 18, y + 2, x + 18, y + 6, color);
-}
-
-void drawWindIcon(int x, int y, uint16_t color) {
-  gfx->drawLine(x, y, x + 18, y, color);
-  gfx->drawLine(x + 11, y - 4, x + 18, y, color);
-  gfx->drawLine(x + 11, y + 4, x + 18, y, color);
-  gfx->drawLine(x, y + 9, x + 24, y + 9, color);
-  gfx->drawLine(x + 17, y + 5, x + 24, y + 9, color);
-  gfx->drawLine(x + 17, y + 13, x + 24, y + 9, color);
-}
-
-void drawCompassIcon(int x, int y, uint16_t color) {
-  gfx->drawCircle(x, y, 12, color);
-  gfx->drawLine(x, y + 9, x, y - 9, color);
-  gfx->drawLine(x, y - 9, x - 5, y + 2, color);
-  gfx->drawLine(x, y - 9, x + 5, y + 2, color);
-}
+void drawWiFiIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_WIFI); }
+void drawThermometer(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x, y, ICON_THERMOMETER); }
+void drawDrop(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y, ICON_DROP); }
+void drawLeaf(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_LEAF); }
+void drawTrend(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x, y - 2, ICON_TREND); }
+void drawWindIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x, y - 2, ICON_WIND); }
+void drawCompassIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_COMPASS); }
 
 void drawRoundedRectCard(int x, int y, int w, int h) {
   uint16_t bg = rgb565(2, 25, 43);
@@ -1459,27 +1427,7 @@ void drawRoundedRectCard(int x, int y, int w, int h) {
   gfx->drawRoundRect(x, y, w, h, 8, border);
 }
 
-void drawSunIcon(int x, int y, uint16_t color) {
-  gfx->fillCircle(x, y, 7, color);
-  gfx->drawLine(x, y - 13, x, y - 10, color);
-  gfx->drawLine(x, y + 10, x, y + 13, color);
-  gfx->drawLine(x - 13, y, x - 10, y, color);
-  gfx->drawLine(x + 10, y, x + 13, y, color);
-  gfx->drawLine(x - 9, y - 9, x - 7, y - 7, color);
-  gfx->drawLine(x + 7, y + 7, x + 9, y + 9, color);
-  gfx->drawLine(x - 9, y + 9, x - 7, y + 7, color);
-  gfx->drawLine(x + 7, y - 7, x + 9, y - 9, color);
-}
-
-String directionLongText(float deg) {
-  if (!isfinite(deg)) return "--";
-  static const char* dirs[] = {
-    "North", "Northeast", "East", "Southeast",
-    "South", "Southwest", "West", "Northwest"
-  };
-  int idx = (int)floorf((deg + 22.5f) / 45.0f) % 8;
-  return String(dirs[idx]);
-}
+void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
 
 String signedTempDelta(float value) {
   if (!isfinite(value)) return "--";
