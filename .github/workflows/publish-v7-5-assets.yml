@@ -1,0 +1,265 @@
+name: Publish V7.5 asset icons
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-v7-5-assets.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Apply V7.5 icon assets and source changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, struct, re
+
+          root = Path('.')
+          boards = [
+              root / 'T-Display-S3',
+              root / 'Waveshare-ESP32-S3-Touch-LCD-2.8',
+          ]
+
+          packed_b64 = '''AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GH0YfRh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAARh9GH0YfAAAAAAAAAAAAAEYfRh9GHwAAAAAAAAAAAAAAAAAAAABGH0YfAAAAAEYfRh9GH0YfRh8AAAAARh9GHwAAAAAAAAAAAAAAAEYfRh8AAAAARh9GH0YfRh9GH0YfRh8AAAAARh9GHwAAAAAAAAAAAAAAAAAAAABGH0YfRh8AAAAAAABGH0YfRh8AAAAAAAAAAAAAAAAAAAAAAAAAAAAARh9GHwAAAABGHwAAAABGH0YfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABGHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD6BvvN+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+837zfvNAAD6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD6BvvN+837zQAA+gb6BgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+gb7zfvN+836BvoG+gYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+837zfvN+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD6BvvN+837zfoG+gb6BgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+gb7zfvN+836BvoG+gYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+837zfvN+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD6BvvN+837zfoG+gb6BgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD6BvvN+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+gb6BvoG+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+gb6BvoG+gb6BvoG+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAD6BvoG+gb6BvoG+gb6BvoG+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAA+gb6BvoG+gb6BvoG+gb6BvoG+gb6BgAAAAAAAAAAAAAAAAAAAAAAAPoG+gb6BvoG+gb6BvoG+gb6BvoG+gYAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+gb6BvoG+gb6BvoG+gb6BgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+gb6BvoG+gb6BvoGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPoG+gb6BvoG+gYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARh9GH0YfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAp19GH0YfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABGH6dfRh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAp1+nX0YfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABGH6dfp19GH0YfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh+nX6dfRh9GH0YfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAAAAAABGH6dfp1+nX0YfRh9GH0YfRh9GH0YfAAAAAAAAAAAAAAAAAAAAAEYfRh+nX6dfp19GH0YfRh9GH0YfRh9GH0YfAAAAAAAAAAAAAAAAAABGH0Yfp1+nX6dfp19GH0YfRh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAARh9GH0Yfp1+nX6dfRh9GH0YfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAEYfRh9GH6dfp1+nX0YfRh9GH0YfRh9GH0YfAAAAAAAAAAAAAAAAAABGH0YfRh9GH6dfp19GH0YfRh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAARh9GH0YfRh+nX6dfRh9GH0YfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAAAARh9GH0YfRh+nX0YfRh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GH0YfRh9GH0YfRh9GH0YfRh8AAAAAAAAAAAAAAAAAAAAAAAAAAEYfRh9GH0YfRh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARh9GH0YfRh9GHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACPBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjwSPBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACPBI8EjwSPBI8EAAAAADQDAAAAAAAAAAAAAAAAAAAAAAAAAACPBI8EjwSPBI8EjwSPBI8ENAM0AzQDAAAAAAAAAAAAAAAAAAAAAI8EjwSPBI8EjwSPBI8EjwQ0AzQDNAMAAAAAAAAAAAAAAAAAAAAAjwSPBI8EjwSPBI8EjwSPBDQDNAM0A48EjwQAAAAAAAAAAAAAAACPBI8EjwSPBI8EjwSPBI8ENAM0AzQDjwSPBI8EjwQAAAAAAAAAAAAAjwSPBI8EjwSPBI8EjwQ0AzQDNAOPBI8EjwSPBI8EAAAAAAAAAAAAAI8EjwSPBI8EjwSPBDQDNAM0A48EjwSPBI8EjwSPBAAAAAAAAAAAAACPBI8EjwSPBI8ENAPHrcetjwSPBI8EjwSPBI8EjwQAAAAAAAAAAAAAjwSPBI8EjwQ0AzQDNAOPBMetx62PBI8EjwSPBI8EAAAAAAAAAAAAAAAAjwSPBDQDx600A48EjwSPBI8Ex63HrY8EjwQAAAAAAAAAAAAAAAAAAAAANAM0AzQDx63HrY8EjwSPBI8EjwSPBAAAAAAAAAAAAAAAAAAAAAA0AzQDNAOPBI8EjwTHrY8EjwSPBI8EAAAAAAAAAAAAAAAAAAAAADQDNAM0AwAAAACPBI8EjwSPBI8EAAAAAAAAAAAAAAAAAAAAAAAAAAAAADQDAAAAAAAAAAAAAAAAjwSPBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI8EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC7/Lv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALv8AAAAAAAAu/y7/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAu/y7/Lv8AAAAALv8u/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC7/Lv8u/y7/Lv8AAC7/Lv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACXvy7/Lv8u/wAAAAAu/y7/AAAAAAAAAAAAAAAAAAAAAAAABfwF/AX8Lv+Xvy7/AAAAAAAALv8u/wAAAAAAAAAAAAAAAAAAAAAAAAX8BfwF/Je/AAAAAAAAAAAAAC7/Lv8AAAAAAAAAAAAABboFugW6AAAF/AX8BfwAAAAAAAAAAAAAAAAu/y7/AAAAAAAAAACXvwW6BboFugAABfwF/AX8AAAAAAAAAAAAAAAALv8u/wAAAAAAAJe/Lv8FugW6BbqXvwX8BfwF/AAAAAAAAAAAAAAAAC7/Lv8AAAVZBVkFWZe/BboFugW6Lv8F/AX8BfwAAAAAAAAAAAAAAAAu/y7/AAAFWQVZBVkAAAW6BboFupe/BfwF/AX8AAAAAAAAAAAAAAAALv8u/5e/BVkFWQVZAAAFugW6BboAAAX8BfwF/AAAAAAAAAAAAAAAAC7/Lv8AAAVZBVkFWQAABboFugW6AAAF/AX8BfwAAAAAAAAAAAAAAAAu/y7/AAAFWQVZBVkAAAW6BboFugAABfwF/AX8AAAAAAAAAAAAAAAALv8u/y7/BVkFWQVZLv8FugW6Bbou/wX8BfwF/C7/Lv8u/y7/AAAAAAAALv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABvv2+/b79vv2+/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG+/AAAAAAAAAAAAAG+/AAAAAAAAAAAAAC7/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALv8u/y7/AAAAAAAAAAAAAAAAAAAu/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8AAAAAAAAAAAAALv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC7/Lv8u/wAAAAAu/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC7/AAAAAC7/Lv8u/wAAAAAAAC7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/AAAu/y7/b79vv2+/b79vvy7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8AAAAAAABvvwAAAAAAAAAAAABvvwAAAAAAAAAAAAAu/y7/Lv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALv8u/y7/AAAAAAAAAAAAAAAAAAAu/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8AAAAAAAAAAAAALv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/y7/Lv8u/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC7/Lv8u/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC7/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB/v3+/f79/v3+/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB/v3+/f79/v3+/f79/v3+/f78AAAAAAAAAAAAAAAAAAAAAAAB/v3+/f79/vwknCScJJwknCSd/v3+/f79/vwAAAAAAAAAAAAAAAH+/f79/vwknCScJJwkn378JJwknCScJJ3+/f79/vwAAAAAAAAAAAAB/v3+/CScJJwknCScJJ9+/CScJJwknCScJJ3+/Lv8AAAAAAAAAAC7/Lv8JJwknCScJJwkn37/fv9+/CScJJwknCScJJy7/Lv8AAAAAAAAu/y7/CScJJwknCScJJ9+/37/fvwknCScJJwknCScu/y7/AAAAAC7/Lv8JJwknCScJJwknCScLUgtSC1IJJwknCScJJwknCScu/y7/AAAu/y7/CScJJwknCScJJwtSC1ILUgtSC1IJJwknCScJJwknLv8u/wAALv8u/wknCScJJwknCScLUgtSC1ILUgtSCScJJwknCScJJy7/Lv8AAC7/Lv8JJwknCScJJ9+/C1ILUgtSC1ILUgknCScJJwknCScu/y7/AAAu/y7/CScJJwknCSffvwknC1ILUgtS378JJwknCScJJwknLv8u/wAAAAAu/y7/CScJJwknCScJJwknCScJJy28CScJJwknCScu/y7/AAAAAAAALv8u/wknCScJJwknCScJJwknCSctvN+/CScJJwknLv8u/wAAAAAAAAAALv8u/wknCScJJwknCScJJwknCSctvAknCScu/y7/AAAAAAAAAAAAAC7/Lv8u/wknCScJJwknCScJJwknCScJJy7/Lv8u/wAAAAAAAAAAAAAAAC7/Lv8u/y7/CScJJwknCScJJy7/Lv8u/y7/AAAAAAAAAAAAAAAAAAAAAAAALv8u/y7/Lv8u/y7/Lv8u/y7/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAu/y7/Lv8u/y7/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP6D/oMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+g/6DAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/oP+gwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP6DAAAAAAAAAAAAAP6D/oMAAAAAAAAAAP6DAAAAAAAAAAAAAAAA/oP+g/6DAAAAAAAAAAAAAAAAAAAAAAAA/oP+g/6DAAAAAAAAAAAAAAAA/oP+g/6DAAD/j/+P/4//j/+PAAD+g/6D/oMAAAAAAAAAAAAAAAAAAAAA/oMAAP+P/oP+g/6D/oP+g/+PAAD+gwAAAAAAAAAAAAAAAAAAAAAAAAAA/4/+g/6D/oP+g/6D/oP+g/+PAAAAAAAAAAAAAAAAAAAAAAAAAAD/j/6D/oP+g/6D/oP+g/6D/oP+g/+PAAAAAAAAAAAAAAAAAAAAAAAA/4/+g/6D/oP+g/6D/oP+g/6D/oP/jwAAAAAAAAAA/oP+g/6D/oMAAP+P/oP+g/6D/oP+g/6D/oP+g/6D/48AAP6D/oP+g/6D/oP+g/6DAAD/j/6D/oP+g/6D/oP+g/6D/oP+g/+PAAD+g/6D/oMAAAAAAAAAAAAA/4/+g/6D/oP+g/6D/oP+g/6D/oP/jwAAAAAAAAAAAAAAAAAAAAAAAAAA/4/+g/6D/oP+g/6D/oP+g/+PAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/4/+g/6D/oP+g/6D/48AAAAAAAAAAAAAAAAAAAAAAAAAAP6DAAAAAAAA/4//j/+P/4//jwAAAAAAAP6DAAAAAAAAAAAAAAAA/oP+g/6DAAAAAAAAAAAAAAAAAAAAAAAA/oP+g/6DAAAAAAAAAAD+g/6D/oMAAAAAAAAAAAAA/oP+gwAAAAAAAAAA/oP+g/6DAAAAAAAAAAD+gwAAAAAAAAAAAAAAAP6D/oMAAAAAAAAAAAAA/oMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+g/6DAAAAAAAAAAAAAAAAAAAAAA=='''
+
+          raw = base64.b64decode(packed_b64)
+          assert len(raw) == 6400
+          names = ['ICON_WIFI','ICON_THERMOMETER','ICON_DROP','ICON_LEAF','ICON_TREND','ICON_WIND','ICON_COMPASS','ICON_SUN']
+          values = list(struct.unpack('>' + 'H' * (len(raw)//2), raw))
+          assert len(values) == 3200
+
+          out = [
+              '#pragma once',
+              '#include <Arduino.h>',
+              '',
+              '// Asset-based icon set used to visually match the approved mockup.',
+              '// 20x20 RGB565 sprites with transparent background keyed as 0x0000.',
+              '',
+              'static constexpr uint16_t UI_ICON_TRANSPARENT = 0x0000;',
+              'static constexpr int UI_ICON_W = 20;',
+              'static constexpr int UI_ICON_H = 20;',
+              ''
+          ]
+          for i, name in enumerate(names):
+              vals = values[i*400:(i+1)*400]
+              out.append(f'static const uint16_t {name}[UI_ICON_W * UI_ICON_H] PROGMEM = {{')
+              line = '  '
+              for j, v in enumerate(vals, 1):
+                  line += f'0x{v:04X}, '
+                  if j % 12 == 0:
+                      out.append(line.rstrip())
+                      line = '  '
+              if line.strip():
+                  out.append(line.rstrip())
+              out.append('};')
+              out.append('')
+          assets = '\n'.join(out)
+          for board in boards:
+              p = board / 'include' / 'ui_assets.h'
+              p.write_text(assets, encoding='utf-8')
+
+          td_block = r'''
+          static void drawIconBitmap(int x, int y, const uint16_t *icon) {
+            for (int iy = 0; iy < UI_ICON_H; iy++) {
+              for (int ix = 0; ix < UI_ICON_W; ix++) {
+                uint16_t px = pgm_read_word(&icon[iy * UI_ICON_W + ix]);
+                if (px != UI_ICON_TRANSPARENT) display.drawPixel(x + ix, y + iy, px);
+              }
+            }
+          }
+
+          void drawWiFiIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_WIFI);
+          }
+
+          void drawThermometer(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x, y, ICON_THERMOMETER);
+          }
+
+          void drawDrop(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y, ICON_DROP);
+          }
+
+          void drawWindIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x, y - 2, ICON_WIND);
+          }
+
+          void drawCompassIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_COMPASS);
+          }
+
+          void drawLeafIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_LEAF);
+          }
+
+          void drawTrendIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x, y, ICON_TREND);
+          }
+
+          void drawSunIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_SUN);
+          }
+          '''.strip()
+
+          wv_block = r'''
+          static void drawIconBitmap(int x, int y, const uint16_t *icon) {
+            for (int iy = 0; iy < UI_ICON_H; iy++) {
+              for (int ix = 0; ix < UI_ICON_W; ix++) {
+                uint16_t px = pgm_read_word(&icon[iy * UI_ICON_W + ix]);
+                if (px != UI_ICON_TRANSPARENT) gfx->drawPixel(x + ix, y + iy, px);
+              }
+            }
+          }
+
+          void drawWiFiIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_WIFI);
+          }
+
+          void drawThermometer(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x, y, ICON_THERMOMETER);
+          }
+
+          void drawDrop(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y, ICON_DROP);
+          }
+
+          void drawLeaf(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_LEAF);
+          }
+
+          void drawTrend(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x, y - 2, ICON_TREND);
+          }
+
+          void drawWindIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x, y - 2, ICON_WIND);
+          }
+
+          void drawCompassIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_COMPASS);
+          }
+
+          void drawRoundedRectCard(int x, int y, int w, int h) {
+            uint16_t bg = rgb565(2, 25, 43);
+            uint16_t border = rgb565(10, 63, 100);
+            gfx->fillRoundRect(x, y, w, h, 8, bg);
+            gfx->drawRoundRect(x, y, w, h, 8, border);
+          }
+
+          void drawSunIcon(int x, int y, uint16_t color) {
+            (void)color;
+            drawIconBitmap(x - 10, y - 10, ICON_SUN);
+          }
+          '''.strip()
+
+          td = root / 'T-Display-S3' / 'src' / 'main.cpp'
+          s = td.read_text(encoding='utf-8')
+          if '#include "ui_assets.h"' not in s:
+              s = s.replace('#include "compile_defaults.h"\n', '#include "compile_defaults.h"\n#include "ui_assets.h"\n', 1)
+          s, n = re.subn(r'void drawWiFiIcon\(int x, int y, uint16_t color\) \{.*?\n\}\n\nvoid drawMetricCard', td_block + '\n\nvoid drawMetricCard', s, count=1, flags=re.S)
+          assert n == 1
+          td.write_text(s, encoding='utf-8')
+
+          wv = root / 'Waveshare-ESP32-S3-Touch-LCD-2.8' / 'src' / 'main.cpp'
+          s = wv.read_text(encoding='utf-8')
+          if '#include "ui_assets.h"' not in s:
+              s = s.replace('#include "compile_defaults.h"\n', '#include "compile_defaults.h"\n#include "ui_assets.h"\n', 1)
+          s, n = re.subn(r'void drawWiFiIcon\(int x, int y, uint16_t color\) \{.*?\n\}\n\nString signedTempDelta', wv_block + '\n\nString signedTempDelta', s, count=1, flags=re.S)
+          assert n == 1
+          wv.write_text(s, encoding='utf-8')
+
+          note = '''# Production Release V7.5 — asset-based mockup icon match
+
+          This release replaces the earlier primitive-drawn weather icons with a fixed
+          RGB565 asset set designed to visually match the approved mockup more closely.
+
+          ## What changed
+
+          Both boards now include:
+
+              include/ui_assets.h
+
+          with 20x20 transparent RGB565 sprites for:
+
+          - Wi-Fi
+          - thermometer / temperature
+          - water drop / humidity
+          - leaf / dew point
+          - trend / from yesterday
+          - wind
+          - compass / direction
+          - sun / today's high-low
+
+          The rendering helpers now blit these assets directly to the display instead of
+          constructing simplified icons from lines, circles, and triangles.
+
+          ## Why
+
+          The prior vector icons were conceptually correct but not visually identical to
+          the mockup. This asset-based set gives a closer match across both production
+          targets while keeping the rest of the UI and all firmware behavior unchanged.
+
+          ## Retained behavior
+
+          - compile-time first-boot defaults + persistent /config overrides
+          - T-Display native LovyanGFX driver profile
+          - Waveshare Arduino_GFX 1.6.0 pin
+          - Heat Index / Wind Chill automatic switching
+          - AmbientWeather current + summary history
+          - performance redraw throttling and rate limiting
+          '''
+          (root / 'RELEASE_V7_5_ASSET_ICONS.md').write_text(note, encoding='utf-8')
+
+          section = '''\n\n## Production Release V7.5\n\nThe display iconography now uses fixed RGB565 asset sprites in `include/ui_assets.h` to more closely match the approved mockup.\n'''
+          for p in [root/'README.md', root/'T-Display-S3'/'README.md', root/'Waveshare-ESP32-S3-Touch-LCD-2.8'/'README.md']:
+              text = p.read_text(encoding='utf-8')
+              if '## Production Release V7.5' not in text:
+                  p.write_text(text + section, encoding='utf-8')
+
+          # Validate final structure and requested V7.5 behavior.
+          for board in boards:
+              main = (board/'src'/'main.cpp').read_text(encoding='utf-8')
+              header = (board/'include'/'ui_assets.h').read_text(encoding='utf-8')
+              assert '#include "ui_assets.h"' in main
+              assert 'drawIconBitmap' in main
+              for icon in ['ICON_THERMOMETER','ICON_DROP','ICON_LEAF','ICON_TREND','ICON_WIND','ICON_COMPASS','ICON_SUN']:
+                  assert icon in header
+              assert not (board/'src'/'parts').exists()
+              assert not (board/'src'/'display.inc').exists()
+              assert (board/'src'/'main.cpp').is_file()
+          PY
+
+      - name: Commit V7.5 production changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add T-Display-S3 Waveshare-ESP32-S3-Touch-LCD-2.8 README.md RELEASE_V7_5_ASSET_ICONS.md
+          git commit -m "Publish V7.5 asset-based display icons"
+          git push origin main
