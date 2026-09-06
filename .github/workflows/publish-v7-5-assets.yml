@@ -111,10 +111,10 @@ jobs:
               'All V7.4 firmware behavior is retained, including compile-time first-boot defaults with persistent `/config` overrides, T-Display native LovyanGFX, Waveshare Arduino_GFX 1.6.0, Heat Index/Wind Chill switching, AmbientWeather current/history data, and performance optimizations.',''])
           (root/'RELEASE_V7_5_ASSET_ICONS.md').write_text(note, encoding='utf-8')
           section = '\n\n## Production Release V7.5\n\nThe display iconography now uses fixed RGB565 asset sprites in `include/ui_assets.h` to more closely match the approved mockup.\n'
-          for p in [root/'README.md', root/'T-Display-S3'/'README.md', root/'Waveshare-ESP32-S3-Touch-LCD-2.8'/'README.md']:
-              text = p.read_text(encoding='utf-8')
-              if '## Production Release V7.5' not in text:
-                  p.write_text(text + section, encoding='utf-8')
+          readme = root/'README.md'
+          text = readme.read_text(encoding='utf-8')
+          if '## Production Release V7.5' not in text:
+              readme.write_text(text + section, encoding='utf-8')
           for board in boards:
               main = (board/'src'/'main.cpp').read_text(encoding='utf-8')
               header = (board/'include'/'ui_assets.h').read_text(encoding='utf-8')
