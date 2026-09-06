@@ -2,7 +2,6 @@ name: Build firmware
 
 on:
   push:
-    branches: [main, refactor-modular]
   pull_request:
     branches: [main]
 
