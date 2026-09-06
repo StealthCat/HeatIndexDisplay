@@ -79,6 +79,8 @@ static void respectAmbientRateLimit();
 static bool weatherDisplayChanged(const WeatherData &before, const WeatherData &after);
 String footerStateKey();
 
+String directionLongText(float deg);
+
 void saveConfig();
 
 static float tryField(JsonObject obj, const char* a, const char* b = nullptr, const char* c = nullptr) {
@@ -1428,6 +1430,16 @@ void drawRoundedRectCard(int x, int y, int w, int h) {
 }
 
 void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
+
+String directionLongText(float deg) {
+  if (!isfinite(deg)) return "--";
+  static const char* dirs[] = {
+    "North", "Northeast", "East", "Southeast",
+    "South", "Southwest", "West", "Northwest"
+  };
+  int idx = (int)floorf((deg + 22.5f) / 45.0f) % 8;
+  return String(dirs[idx]);
+}
 
 String signedTempDelta(float value) {
   if (!isfinite(value)) return "--";
