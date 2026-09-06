@@ -1,0 +1,63 @@
+name: Restore single main.cpp files
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/restore-single-main.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Reassemble original V7.4 main.cpp files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat \
+            T-Display-S3/src/parts/common01.inc \
+            T-Display-S3/src/parts/common02.inc \
+            T-Display-S3/src/parts/common03.inc \
+            T-Display-S3/src/parts/common04.inc \
+            T-Display-S3/src/display.inc \
+            > T-Display-S3/src/main.cpp
+
+          cat \
+            Waveshare-ESP32-S3-Touch-LCD-2.8/src/parts/common01.inc \
+            Waveshare-ESP32-S3-Touch-LCD-2.8/src/parts/common02.inc \
+            Waveshare-ESP32-S3-Touch-LCD-2.8/src/parts/common03.inc \
+            Waveshare-ESP32-S3-Touch-LCD-2.8/src/parts/common04.inc \
+            Waveshare-ESP32-S3-Touch-LCD-2.8/src/display.inc \
+            > Waveshare-ESP32-S3-Touch-LCD-2.8/src/main.cpp
+
+          rm -rf T-Display-S3/src/parts
+          rm -f T-Display-S3/src/display.inc
+          rm -rf Waveshare-ESP32-S3-Touch-LCD-2.8/src/parts
+          rm -f Waveshare-ESP32-S3-Touch-LCD-2.8/src/display.inc
+
+          grep -q '#include <Arduino.h>' T-Display-S3/src/main.cpp
+          grep -q 'class WS5000_TDisplayS3' T-Display-S3/src/main.cpp
+          grep -q '#include <Arduino.h>' Waveshare-ESP32-S3-Touch-LCD-2.8/src/main.cpp
+          grep -q 'Arduino_ST7789' Waveshare-ESP32-S3-Touch-LCD-2.8/src/main.cpp
+
+      - name: Commit restored source structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A T-Display-S3/src Waveshare-ESP32-S3-Touch-LCD-2.8/src
+          if git diff --cached --quiet; then
+            echo "Nothing to change"
+            exit 0
+          fi
+          git commit -m "Restore single main.cpp source files"
+          git push origin main
