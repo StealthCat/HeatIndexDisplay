@@ -13,3 +13,9 @@ Functional code is separated into `app_state`, `app_controller`,
 
 This structure also prevents display helpers such as wind-direction formatting
 from being accidentally removed when icon/rendering code changes.
+
+The modular sources are validated with PlatformIO CI for both production targets.
+The first CI pass identified and corrected the explicit declaration ordering for
+`respectAmbientRateLimit()` and the duplicated default argument on `pollAmbient()`
+that only became visible after moving those functions into normal C++ translation
+units.
