@@ -22,7 +22,7 @@ jobs:
       - name: Commit refactor
         shell: bash
         run: |
-          rm -f .github/refactor_v7_6.py .github/workflows/refactor-v7-6.yml
+          rm -f .github/refactor_v7_6.py .github/workflows/refactor-v7-6.yml .github/workflows/build.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
