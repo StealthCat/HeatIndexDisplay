@@ -1,0 +1,30 @@
+name: Fix V7.6 modular compile issues
+
+on:
+  push:
+    branches: [refactor-modular]
+    paths:
+      - .github/workflows/fix-refactor-compile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Apply compile fixes
+        run: python .github/fix_refactor_compile.py
+
+      - name: Commit fixes
+        shell: bash
+        run: |
+          rm -f .github/fix_refactor_compile.py .github/workflows/fix-refactor-compile.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix modular AmbientWeather declarations"
+          git push origin HEAD:refactor-modular
