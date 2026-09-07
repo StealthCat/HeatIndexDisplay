@@ -152,7 +152,7 @@ static bool fetchHistoryDate(const String &dateYmd, DynamicJsonDocument &doc, St
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(15000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.9");
 
   respectWundergroundRateLimit();
 
@@ -238,7 +238,7 @@ static bool fetchDailyHistoryDate(const String &dateYmd,
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(15000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.9");
 
   respectWundergroundRateLimit();
 
@@ -339,7 +339,7 @@ static bool fetchRecentWunderground(const char *baseUrl,
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(15000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.9");
 
   respectWundergroundRateLimit();
 
@@ -479,7 +479,7 @@ bool fetchWeatherUndergroundCurrent(String &errorOut) {
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(12000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.9");
 
   respectWundergroundRateLimit();
 
@@ -544,6 +544,8 @@ bool fetchWeatherUndergroundCurrent(String &errorOut) {
   if (!isfinite(wx.maxDailyGustMph) && isfinite(wx.gustMph)) wx.maxDailyGustMph = wx.gustMph;
   wx.windChillF = nwsWindChillF(wx.tempF, wx.windMph);
   wx.windDirDeg = wuFloat(obs["winddir"]);
+  wx.latitude = wuFloat(obs["lat"]);
+  wx.longitude = wuFloat(obs["lon"]);
 
   uint64_t epoch = obs["epoch"] | 0ULL;
   wx.dateUtcMs = epoch * 1000ULL;

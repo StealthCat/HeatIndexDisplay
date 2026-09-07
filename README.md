@@ -13,9 +13,9 @@ The production UI is designed to match the following Heat Index and Wind Chill l
 
 ![HeatIndexDisplay production mockup showing T-Display S3 and Waveshare 2.8-inch displays in Heat Index and Wind Chill modes](docs/weather_dashboard_device_comparison.webp)
 
-## Current release: V7.8.1
+## Current release: V7.9
 
-V7.8.1 keeps the approved production layouts and provider selection while making live provider summaries more reliable. Ambient widens its same-time-yesterday REST window. Weather Underground now prefers recent 7-day hourly REST observations for Today High/Low and From Yesterday, then falls back to recent 1-day and archived history products.
+V7.9 changes the High / Low card to forecast temperatures. The selected station coordinates are used with Open-Meteo's two-day daily forecast REST API. The card shows today's forecast high/low for 30 seconds, then tomorrow's for 30 seconds, repeating continuously. From Yesterday remains sourced from the configured Ambient Weather or Weather Underground history REST API.
 
 ### Compile-time defaults
 
@@ -74,3 +74,8 @@ Today High/Low and From Yesterday are fetched from the REST history API belongin
 ## Production Release V7.8.1
 
 Live Weather Underground summaries now prefer `/v2/pws/observations/hourly/7day`, use provider-local `obsTimeLocal` for today/yesterday matching, and fall back through `/observations/all/1day` and archived history. Ambient widens the same-time-yesterday REST window. See `RELEASE_V7_8_1_LIVE_PROVIDER_SUMMARY_FIX.md`.
+
+
+## Production Release V7.9
+
+The High / Low card now uses forecast data rather than observed daily extrema. Both weather-source modes obtain station coordinates from their current-observation payload, then request a two-day daily forecast from Open-Meteo. The card alternates Today and Tomorrow every 30 seconds without changing the approved card geometry. Forecast data refreshes every 15 minutes, with a 60-second retry until the first successful forecast. See `RELEASE_V7_9_FORECAST_HIGH_LOW.md`.

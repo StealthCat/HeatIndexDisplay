@@ -4,3 +4,4 @@ void displayBegin();
 void drawWaitingScreen();
 void drawWeatherScreen();
 void drawFooter();
+void drawForecastHighLowCard();

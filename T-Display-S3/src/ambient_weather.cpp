@@ -63,7 +63,7 @@ bool fetchAmbientDevices(DynamicJsonDocument &doc, String &errorOut) {
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(12000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.9");
 
   respectAmbientRateLimit();
 
@@ -150,6 +150,22 @@ bool applySelectedDevice(JsonArray devices, bool allowAutoSelect, String &errorO
   wx.maxDailyGustMph = tryField(last, "maxdailygust");
   wx.windChillF = nwsWindChillF(wx.tempF, wx.windMph);
   wx.windDirDeg = tryField(last, "winddir");
+
+  JsonObject coordValues = selected["info"]["coords"]["coords"].as<JsonObject>();
+  float stationLat = coordValues.isNull() ? NAN : tryField(coordValues, "lat");
+  float stationLon = coordValues.isNull() ? NAN : tryField(coordValues, "lon");
+  if (!isfinite(stationLat) || !isfinite(stationLon)) {
+    JsonArray geo = selected["info"]["coords"]["geo"]["coordinates"].as<JsonArray>();
+    if (!geo.isNull() && geo.size() >= 2) {
+      stationLon = geo[0].as<float>();
+      stationLat = geo[1].as<float>();
+    }
+  }
+  if (isfinite(stationLat) && isfinite(stationLon)) {
+    wx.latitude = stationLat;
+    wx.longitude = stationLon;
+  }
+
   wx.dateUtcMs = last["dateutc"] | 0ULL;
   wx.fetchedMs = millis();
   wx.valid = true;
@@ -238,7 +254,7 @@ bool fetchAmbientSummary(String &errorOut) {
     HTTPClient http;
     http.setConnectTimeout(10000);
     http.setTimeout(15000);
-    http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
+    http.setUserAgent("WS5000-ApparentTemp-ESP32/7.9");
 
     respectAmbientRateLimit();
 

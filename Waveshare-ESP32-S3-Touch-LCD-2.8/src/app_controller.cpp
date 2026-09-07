@@ -3,6 +3,7 @@
 #include "app_controller.h"
 #include "config_store.h"
 #include "display_ui.h"
+#include "forecast_weather.h"
 #include "ui_state.h"
 #include "web_ui.h"
 #include "weather_source.h"
@@ -29,9 +30,12 @@ void appSetup() {
     return;
   }
   pollWeatherSource(true);
+  pollForecastIfDue(true);
 }
 
 void appLoop() {
+  static bool forecastPhaseInitialized = false;
+  static bool lastForecastTomorrow = false;
   if (webStarted) {
     server.handleClient();
   }
@@ -58,6 +62,22 @@ void appLoop() {
 
   if (nowMs - lastUiStateCheckMs >= 1000UL) {
     lastUiStateCheckMs = nowMs;
+
+    if (WiFi.status() == WL_CONNECTED && wx.valid) {
+      pollForecastIfDue(true);
+    }
+
+    if (wx.forecastValid) {
+      bool showTomorrow = forecastShowsTomorrow();
+      if (!forecastPhaseInitialized || showTomorrow != lastForecastTomorrow) {
+        lastForecastTomorrow = showTomorrow;
+        forecastPhaseInitialized = true;
+        drawForecastHighLowCard();
+      }
+    } else {
+      forecastPhaseInitialized = false;
+    }
+
     String newKey = footerStateKey();
     if (newKey != lastFooterStateKey) {
       lastFooterStateKey = newKey;

@@ -13,6 +13,7 @@ board-specific implementation is `src/display_ui.cpp`.
 | `weather_source.*` | Selects the configured provider and dispatches polling |
 | `ambient_weather.*` | AmbientWeather REST polling, JSON parsing, history summary and rate limiting |
 | `wunderground_weather.*` | Weather Underground PWS current/history polling and JSON parsing |
+| `forecast_weather.*` | Two-day forecast high/low retrieval and 30-second Today/Tomorrow card phase |
 | `time_utils.*` | Observation age, stale detection and date/time formatting |
 | `wifi_manager.*` | Wi-Fi STA/AP connection and setup-AP behavior |
 | `web_ui.*` | Configuration/status HTTP routes and HTML UI |

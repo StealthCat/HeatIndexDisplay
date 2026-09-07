@@ -4,6 +4,7 @@
 #include "app_state.h"
 #include "config_store.h"
 #include "display_ui.h"
+#include "forecast_weather.h"
 #include "time_utils.h"
 #include "weather_math.h"
 #include "wifi_manager.h"
@@ -107,6 +108,35 @@ String signedTempDelta(float value) {
   s += String(value, 1);
   s += "F";
   return s;
+}
+
+void drawForecastHighLowCard() {
+  const uint16_t cyan = rgb565(65, 205, 255);
+  const uint16_t yellow = rgb565(255, 195, 25);
+  const bool tomorrow = forecastShowsTomorrow();
+  drawRoundedRectCard(143, 201, 87, 68);
+  drawSunIcon(158, 228, yellow);
+  setText(C_WHITE, 1);
+  gfx->setCursor(174, 211);
+  if (wx.forecastValid) {
+    float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
+    float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
+    if (isfinite(high) && isfinite(low)) {
+      gfx->print(String(high, 1));
+      gfx->print(" / ");
+      gfx->print(String(low, 1));
+      gfx->print("F");
+    } else {
+      gfx->print("-- / --");
+    }
+  } else {
+    gfx->print("-- / --");
+  }
+  setText(cyan, 1);
+  gfx->setCursor(174, 231);
+  gfx->print(tomorrow ? "Tomorrow" : "Today's");
+  gfx->setCursor(174, 244);
+  gfx->print("High / Low");
 }
 
 void headerText() {
@@ -298,25 +328,8 @@ void drawWeatherScreen() {
   if (dirLong.length() > 7) dirLong = directionText(wx.windDirDeg);
   gfx->print(dirLong);
 
-  // Today's High / Low is aligned to the right-side metric column above:
-  // same x position and width as Temperature/Humidity/Dew Point/Yesterday.
-  drawRoundedRectCard(143, 201, 87, 68);
-  drawSunIcon(158, 228, yellow);
-  setText(C_WHITE, 1);
-  gfx->setCursor(174, 211);
-  if (wx.summaryValid) {
-    gfx->print(String(wx.todayHighF, 1));
-    gfx->print(" / ");
-    gfx->print(String(wx.todayLowF, 1));
-    gfx->print("F");
-  } else {
-    gfx->print("-- / --");
-  }
-  setText(cyan, 1);
-  gfx->setCursor(174, 231);
-  gfx->print("Today's");
-  gfx->setCursor(174, 244);
-  gfx->print("High / Low");
+  // Forecast High / Low keeps the approved geometry and alternates Today/Tomorrow.
+  drawForecastHighLowCard();
 
   drawFooter();
 }

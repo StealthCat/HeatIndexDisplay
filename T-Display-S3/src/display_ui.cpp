@@ -4,6 +4,7 @@
 #include "app_state.h"
 #include "config_store.h"
 #include "display_ui.h"
+#include "forecast_weather.h"
 #include "time_utils.h"
 #include "weather_math.h"
 #include "wifi_manager.h"
@@ -150,6 +151,30 @@ String signedTempDelta(float value) {
   s += String(value, 1);
   s += "F";
   return s;
+}
+
+void drawForecastHighLowCard() {
+  const uint16_t cyan = rgb565(65, 205, 255);
+  const uint16_t yellow = rgb565(255, 195, 25);
+  const uint16_t cardBg = rgb565(2, 25, 43);
+  const bool tomorrow = forecastShowsTomorrow();
+  drawMetricCard(7, 258, 156, 29);
+  drawSunIcon(20, 272, yellow);
+  display.setTextDatum(textdatum_t::middle_left);
+  display.setFont(&fonts::Font2);
+  display.setTextColor(C_WHITE, cardBg);
+  String hl = "-- / --";
+  if (wx.forecastValid) {
+    float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
+    float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
+    if (isfinite(high) && isfinite(low)) {
+      hl = String(high, 1) + " / " + String(low, 1) + "F";
+    }
+  }
+  display.drawString(hl, 37, 267);
+  display.setFont(&fonts::Font0);
+  display.setTextColor(cyan, cardBg);
+  display.drawString(tomorrow ? "Tomorrow High / Low" : "Today's High / Low", 37, 281);
 }
 
 
@@ -333,19 +358,8 @@ void drawWeatherScreen() {
   display.setTextColor(cyan, rgb565(2, 25, 43));
   display.drawString(isfinite(wx.windDirDeg) ? directionText(wx.windDirDeg) : "Direction", 115, 247);
 
-  // Today's high / low card
-  drawMetricCard(7, 258, 156, 29);
-  drawSunIcon(20, 272, yellow);
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  String hl = "-- / --";
-  if (wx.summaryValid) {
-    hl = String(wx.todayHighF, 1) + " / " + String(wx.todayLowF, 1) + "F";
-  }
-  display.drawString(hl, 37, 267);
-  display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString("Today's High / Low", 37, 281);
+  // Forecast high / low card alternates Today and Tomorrow every 30 seconds.
+  drawForecastHighLowCard();
 
   drawFooter();
 }

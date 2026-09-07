@@ -20,3 +20,7 @@
 #define WUNDERGROUND_RECENT_7DAY_HOURLY_URL "https://api.weather.com/v2/pws/observations/hourly/7day"
 #define WUNDERGROUND_HISTORY_URL  "https://api.weather.com/v2/pws/history/all"
 #define WUNDERGROUND_DAILY_HISTORY_URL "https://api.weather.com/v2/pws/history/daily"
+#define OPEN_METEO_FORECAST_URL    "https://api.open-meteo.com/v1/forecast"
+#define FORECAST_REFRESH_SECONDS  900UL
+#define FORECAST_RETRY_SECONDS    60UL
+#define FORECAST_CARD_SWITCH_SECONDS 30UL

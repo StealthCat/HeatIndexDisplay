@@ -17,3 +17,6 @@ String lastApiError;
 int lastHttpCode = 0;
 int lastSummaryHttpCode = 0;
 String lastSummaryError;
+unsigned long lastForecastPollMs = 0;
+String lastForecastError;
+int lastForecastHttpCode = 0;
