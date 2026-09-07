@@ -95,6 +95,8 @@ static void printBoldAt(int x, int y, const String &text, uint16_t color, uint8_
   gfx->print(text);
   gfx->setCursor(x + 1, y);
   gfx->print(text);
+  gfx->setCursor(x, y + 1);
+  gfx->print(text);
 }
 
 static void centerBoldText(const String &text, int centerX, int y, uint8_t size, uint16_t color) {
@@ -106,6 +108,8 @@ static void centerBoldText(const String &text, int centerX, int y, uint8_t size,
   gfx->setCursor(x, y);
   gfx->print(text);
   gfx->setCursor(x + 1, y);
+  gfx->print(text);
+  gfx->setCursor(x, y + 1);
   gfx->print(text);
 }
 

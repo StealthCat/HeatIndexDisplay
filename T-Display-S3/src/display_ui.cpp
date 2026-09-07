@@ -148,6 +148,7 @@ static void drawBoldText(const String &text, int x, int y, uint16_t color) {
   display.setTextColor(color);
   display.drawString(text, x, y);
   display.drawString(text, x + 1, y);
+  display.drawString(text, x, y + 1);
 }
 
 String signedTempDelta(float value) {
