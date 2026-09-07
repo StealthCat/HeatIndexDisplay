@@ -63,7 +63,7 @@ bool fetchAmbientDevices(DynamicJsonDocument &doc, String &errorOut) {
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(12000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/4.0");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
 
   respectAmbientRateLimit();
 
@@ -198,7 +198,7 @@ bool fetchAmbientSummary(String &errorOut) {
     errorOut = "Wi-Fi is not connected";
     return false;
   }
-  if (!apiConfigured() || !cfg.macAddress.length()) {
+  if (!ambientConfigured() || !cfg.macAddress.length()) {
     errorOut = "Ambient credentials/station are not configured";
     return false;
   }
@@ -207,106 +207,168 @@ bool fetchAmbientSummary(String &errorOut) {
     return false;
   }
 
-  String url = String(AMBIENT_DEVICES_URL) + "/" + cfg.macAddress
-             + "?apiKey=" + urlEncode(cfg.apiKey)
-             + "&applicationKey=" + urlEncode(cfg.applicationKey)
-             + "&limit=288";
+  // Ambient's REST history endpoint is the authoritative source for
+  // the summary values shown on the display. Use an explicit current
+  // history window for today's high/low and a second request ending at
+  // the same local clock time yesterday for From Yesterday.
+  auto fetchHistory = [&](uint64_t endDateMs,
+                          uint16_t limit,
+                          DynamicJsonDocument &doc,
+                          String &requestError) -> bool {
+    requestError = "";
 
-  WiFiClientSecure client;
-  client.setInsecure();
-  client.setTimeout(12);
+    char endDateBuf[24];
+    snprintf(endDateBuf, sizeof(endDateBuf), "%llu",
+             (unsigned long long)endDateMs);
 
-  HTTPClient http;
-  http.setConnectTimeout(10000);
-  http.setTimeout(15000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/4.0");
+    String url = String(AMBIENT_DEVICES_URL) + "/" + cfg.macAddress;
+    url += "?apiKey=";
+    url += urlEncode(cfg.apiKey);
+    url += "&applicationKey=";
+    url += urlEncode(cfg.applicationKey);
+    url += "&endDate=";
+    url += endDateBuf;
+    url += "&limit=";
+    url += String(limit);
 
-  respectAmbientRateLimit();
+    WiFiClientSecure client;
+    client.setInsecure();
+    client.setTimeout(12);
 
-  if (!http.begin(client, url)) {
-    errorOut = "Unable to initialize Ambient history HTTPS request";
-    return false;
-  }
+    HTTPClient http;
+    http.setConnectTimeout(10000);
+    http.setTimeout(15000);
+    http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
 
-  int code = http.GET();
-  lastAmbientRequestMs = millis();
-  lastSummaryHttpCode = code;
+    respectAmbientRateLimit();
 
-  if (code != HTTP_CODE_OK) {
-    String body = http.getString();
-    body.trim();
-    if (body.length() > 160) body = body.substring(0, 160);
-    errorOut = "Ambient history HTTP " + String(code);
-    if (body.length()) {
-      errorOut += ": ";
-      errorOut += body;
+    if (!http.begin(client, url)) {
+      requestError = "Unable to initialize Ambient REST history request";
+      return false;
     }
+
+    int code = http.GET();
+    lastAmbientRequestMs = millis();
+    lastSummaryHttpCode = code;
+
+    if (code != HTTP_CODE_OK) {
+      String body = http.getString();
+      body.trim();
+      if (body.length() > 160) body = body.substring(0, 160);
+      requestError = "Ambient REST history HTTP " + String(code);
+      if (body.length()) {
+        requestError += ": ";
+        requestError += body;
+      }
+      http.end();
+      return false;
+    }
+
+    StaticJsonDocument<96> filter;
+    filter[0]["dateutc"] = true;
+    filter[0]["tempf"] = true;
+
+    DeserializationError jsonErr = deserializeJson(
+      doc,
+      http.getStream(),
+      DeserializationOption::Filter(filter)
+    );
     http.end();
-    return false;
-  }
 
-  // Only retain the two fields needed for the mockup summary. This keeps the
-  // memory footprint small even when Ambient returns 288 observations.
-  StaticJsonDocument<96> filter;
-  filter[0]["dateutc"] = true;
-  filter[0]["tempf"] = true;
+    if (jsonErr) {
+      requestError = "Ambient REST history JSON error: " + String(jsonErr.c_str());
+      return false;
+    }
+    if (!doc.is<JsonArray>() || doc.size() == 0) {
+      requestError = "Ambient REST history returned no observations";
+      return false;
+    }
+    return true;
+  };
 
-  DynamicJsonDocument doc(18432);
-  DeserializationError jsonErr = deserializeJson(
-    doc,
-    http.getStream(),
-    DeserializationOption::Filter(filter)
-  );
-  http.end();
-
-  if (jsonErr) {
-    errorOut = "Ambient history JSON error: " + String(jsonErr.c_str());
-    return false;
-  }
-  if (!doc.is<JsonArray>() || doc.size() == 0) {
-    errorOut = "Ambient history returned no observations";
+  DynamicJsonDocument todayDoc(18432);
+  String todayError;
+  if (!fetchHistory(wx.dateUtcMs, 288, todayDoc, todayError)) {
+    errorOut = todayError;
     return false;
   }
 
   float high = wx.tempF;
   float low = wx.tempF;
-  float yesterday = NAN;
 
-  const uint64_t targetYesterdayMs =
-    wx.dateUtcMs > 86400000ULL ? wx.dateUtcMs - 86400000ULL : 0ULL;
-
-  uint64_t bestYesterdayDifference = UINT64_MAX;
-
-  for (JsonObject point : doc.as<JsonArray>()) {
+  for (JsonObject point : todayDoc.as<JsonArray>()) {
     uint64_t pointMs = point["dateutc"] | 0ULL;
     float pointTemp = tryField(point, "tempf");
-
     if (pointMs == 0 || !isfinite(pointTemp)) continue;
 
     if (sameLocalDay(pointMs, wx.dateUtcMs)) {
       if (!isfinite(high) || pointTemp > high) high = pointTemp;
       if (!isfinite(low) || pointTemp < low) low = pointTemp;
     }
-
-    if (targetYesterdayMs > 0) {
-      uint64_t delta = pointMs > targetYesterdayMs
-                     ? pointMs - targetYesterdayMs
-                     : targetYesterdayMs - pointMs;
-
-      if (delta < bestYesterdayDifference) {
-        bestYesterdayDifference = delta;
-        yesterday = pointTemp;
-      }
-    }
   }
 
+  // Compute "same local clock time yesterday" rather than blindly
+  // subtracting 24 hours so DST transitions remain correct.
+  time_t currentSec = (time_t)(wx.dateUtcMs / 1000ULL);
+  struct tm yesterdayTm;
+  localtime_r(&currentSec, &yesterdayTm);
+  yesterdayTm.tm_mday -= 1;
+  yesterdayTm.tm_isdst = -1;
+  time_t yesterdaySec = mktime(&yesterdayTm);
+  uint64_t targetYesterdayMs = yesterdaySec > 0
+                             ? (uint64_t)yesterdaySec * 1000ULL
+                             : 0ULL;
+
+  // Today's high/low are already valid REST-derived values. Commit
+  // them even if the separate yesterday request fails, and preserve
+  // any previously successful From Yesterday value in that case.
   wx.todayHighF = high;
   wx.todayLowF = low;
-  wx.yesterdayTempF = yesterday;
-  wx.fromYesterdayF = isfinite(yesterday) ? wx.tempF - yesterday : NAN;
   wx.summaryValid = isfinite(wx.todayHighF) && isfinite(wx.todayLowF);
   wx.summaryFetchedMs = millis();
 
+  if (targetYesterdayMs == 0) {
+    errorOut = "Unable to determine Ambient yesterday target time";
+    return false;
+  }
+
+  DynamicJsonDocument yesterdayDoc(1024);
+  String yesterdayError;
+  if (!fetchHistory(targetYesterdayMs, 2, yesterdayDoc, yesterdayError)) {
+    errorOut = yesterdayError;
+    return false;
+  }
+
+  float yesterday = NAN;
+  uint64_t bestYesterdayDifference = UINT64_MAX;
+
+  for (JsonObject point : yesterdayDoc.as<JsonArray>()) {
+    uint64_t pointMs = point["dateutc"] | 0ULL;
+    float pointTemp = tryField(point, "tempf");
+    if (pointMs == 0 || !isfinite(pointTemp)) continue;
+
+    uint64_t delta = pointMs > targetYesterdayMs
+                   ? pointMs - targetYesterdayMs
+                   : targetYesterdayMs - pointMs;
+    if (delta < bestYesterdayDifference) {
+      bestYesterdayDifference = delta;
+      yesterday = pointTemp;
+    }
+  }
+
+  if (!isfinite(yesterday)) {
+    errorOut = "Ambient REST history did not contain yesterday temperature";
+    return false;
+  }
+
+  wx.yesterdayTempF = yesterday;
+  wx.fromYesterdayF = wx.tempF - yesterday;
+  wx.summaryFetchedMs = millis();
+
+  Serial.printf(
+    "Ambient REST summary: high=%.2fF low=%.2fF yesterday=%.2fF delta=%+.2fF\n",
+    wx.todayHighF, wx.todayLowF, wx.yesterdayTempF, wx.fromYesterdayF
+  );
   return true;
 }
 

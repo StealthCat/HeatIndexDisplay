@@ -222,7 +222,7 @@ void handleConfig() {
   html += F("<option value='wunderground'");
   if (usingWeatherUnderground()) html += F(" selected");
   html += F(">Weather Underground</option></select></label>");
-  html += F("<p class='muted'>The selected source is used for current conditions and the historical data behind From Yesterday and Today's High / Low.</p></div>");
+  html += F("<p class='muted'>The selected source is used for current conditions and its REST history API supplies From Yesterday and Today's High / Low.</p></div>");
 
   html += F("<div class='card'><h2>AmbientWeather.net</h2>");
   html += F("<p class='muted'>Ambient requires both an Application Key and an API Key. Saved secrets are never rendered back into the page.</p>");

@@ -89,7 +89,7 @@ static bool fetchHistoryDate(const String &dateYmd, DynamicJsonDocument &doc, St
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(15000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.7");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
 
   respectWundergroundRateLimit();
 
@@ -142,6 +142,112 @@ static bool fetchHistoryDate(const String &dateYmd, DynamicJsonDocument &doc, St
   return true;
 }
 
+static bool fetchDailyHistoryDate(const String &dateYmd,
+                              DynamicJsonDocument &doc,
+                              String &errorOut) {
+  errorOut = "";
+  if (WiFi.status() != WL_CONNECTED) {
+    errorOut = "Wi-Fi is not connected";
+    return false;
+  }
+  if (!weatherUndergroundConfigured()) {
+    errorOut = "Weather Underground API key/station ID are not configured";
+    return false;
+  }
+  if (!dateYmd.length()) {
+    errorOut = "Unable to determine daily history date";
+    return false;
+  }
+
+  String url = String(WUNDERGROUND_DAILY_HISTORY_URL);
+  url += "?stationId=";
+  url += wuUrlEncode(cfg.wuStationId);
+  url += "&format=json&units=e&date=";
+  url += dateYmd;
+  url += "&numericPrecision=decimal&apiKey=";
+  url += wuUrlEncode(cfg.wuApiKey);
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setTimeout(12);
+
+  HTTPClient http;
+  http.setConnectTimeout(10000);
+  http.setTimeout(15000);
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
+
+  respectWundergroundRateLimit();
+
+  if (!http.begin(client, url)) {
+    errorOut = "Unable to initialize Weather Underground daily REST request";
+    return false;
+  }
+
+  int code = http.GET();
+  lastWundergroundRequestMs = millis();
+  lastSummaryHttpCode = code;
+
+  if (code != HTTP_CODE_OK) {
+    String body = http.getString();
+    body.trim();
+    if (body.length() > 160) body = body.substring(0, 160);
+    errorOut = "Weather Underground daily REST HTTP " + String(code);
+    if (body.length()) {
+      errorOut += ": ";
+      errorOut += body;
+    }
+    http.end();
+    return false;
+  }
+
+  StaticJsonDocument<192> filter;
+  filter["observations"][0]["imperial"]["tempHigh"] = true;
+  filter["observations"][0]["imperial"]["tempLow"] = true;
+  filter["observations"][0]["imperial"]["windgustHigh"] = true;
+
+  DeserializationError jsonErr = deserializeJson(
+    doc,
+    http.getStream(),
+    DeserializationOption::Filter(filter)
+  );
+  http.end();
+
+  if (jsonErr) {
+    errorOut = "Weather Underground daily REST JSON error: " + String(jsonErr.c_str());
+    return false;
+  }
+
+  JsonArray observations = doc["observations"].as<JsonArray>();
+  if (observations.isNull() || observations.size() == 0) {
+    errorOut = "Weather Underground daily REST returned no observations for " + dateYmd;
+    return false;
+  }
+  return true;
+}
+
+static bool summarizeWundergroundAllHistory(const String &dateYmd,
+                                             float &high,
+                                             float &low,
+                                             float &maxGust,
+                                             String &errorOut) {
+  DynamicJsonDocument allDoc(32768);
+  if (!fetchHistoryDate(dateYmd, allDoc, errorOut)) return false;
+
+  for (JsonObject point : allDoc["observations"].as<JsonArray>()) {
+    JsonObject imperial = point["imperial"].as<JsonObject>();
+    float pointHigh = wuFloat(imperial["tempHigh"]);
+    float pointLow = wuFloat(imperial["tempLow"]);
+    float pointGust = wuFloat(imperial["windgustHigh"]);
+
+    if (isfinite(pointHigh) && (!isfinite(high) || pointHigh > high)) high = pointHigh;
+    if (isfinite(pointLow) && (!isfinite(low) || pointLow < low)) low = pointLow;
+    if (isfinite(pointGust) && (!isfinite(maxGust) || pointGust > maxGust)) {
+      maxGust = pointGust;
+    }
+  }
+  return isfinite(high) && isfinite(low);
+}
+
 bool fetchWeatherUndergroundCurrent(String &errorOut) {
   errorOut = "";
   if (WiFi.status() != WL_CONNECTED) {
@@ -165,7 +271,7 @@ bool fetchWeatherUndergroundCurrent(String &errorOut) {
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(12000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.7");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
 
   respectWundergroundRateLimit();
 
@@ -255,16 +361,22 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
     return false;
   }
 
-  const uint64_t targetYesterdayMs =
-      wx.dateUtcMs > 86400000ULL ? wx.dateUtcMs - 86400000ULL : 0ULL;
+  // Use local calendar arithmetic so "From Yesterday" is the same
+  // local clock time even across DST transitions.
+  time_t currentSec = (time_t)(wx.dateUtcMs / 1000ULL);
+  struct tm yesterdayTm;
+  localtime_r(&currentSec, &yesterdayTm);
+  yesterdayTm.tm_mday -= 1;
+  yesterdayTm.tm_isdst = -1;
+  time_t yesterdaySec = mktime(&yesterdayTm);
+  uint64_t targetYesterdayMs = yesterdaySec > 0
+                             ? (uint64_t)yesterdaySec * 1000ULL
+                             : 0ULL;
 
   String todayYmd = localDateYmd(wx.dateUtcMs);
   String yesterdayYmd = localDateYmd(targetYesterdayMs);
-
-  DynamicJsonDocument todayDoc(32768);
-  String todayError;
-  if (!fetchHistoryDate(todayYmd, todayDoc, todayError)) {
-    errorOut = todayError;
+  if (!todayYmd.length() || !yesterdayYmd.length()) {
+    errorOut = "Unable to determine Weather Underground REST history dates";
     return false;
   }
 
@@ -272,23 +384,49 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
   float low = wx.tempF;
   float maxGust = isfinite(wx.gustMph) ? wx.gustMph : NAN;
 
-  for (JsonObject point : todayDoc["observations"].as<JsonArray>()) {
-    JsonObject imperial = point["imperial"].as<JsonObject>();
-    float pointHigh = wuFloat(imperial["tempHigh"]);
-    float pointLow = wuFloat(imperial["tempLow"]);
-    float pointGust = wuFloat(imperial["windgustHigh"]);
+  // Prefer the provider's daily summary REST endpoint for today's
+  // high/low and maximum gust. If a current-day daily summary is not
+  // yet available, fall back to the all-observations REST endpoint.
+  DynamicJsonDocument dailyDoc(4096);
+  String dailyError;
+  bool dailyOk = fetchDailyHistoryDate(todayYmd, dailyDoc, dailyError);
+  if (dailyOk) {
+    for (JsonObject point : dailyDoc["observations"].as<JsonArray>()) {
+      JsonObject imperial = point["imperial"].as<JsonObject>();
+      float pointHigh = wuFloat(imperial["tempHigh"]);
+      float pointLow = wuFloat(imperial["tempLow"]);
+      float pointGust = wuFloat(imperial["windgustHigh"]);
 
-    if (isfinite(pointHigh) && (!isfinite(high) || pointHigh > high)) high = pointHigh;
-    if (isfinite(pointLow) && (!isfinite(low) || pointLow < low)) low = pointLow;
-    if (isfinite(pointGust) && (!isfinite(maxGust) || pointGust > maxGust)) {
-      maxGust = pointGust;
+      if (isfinite(pointHigh) && (!isfinite(high) || pointHigh > high)) high = pointHigh;
+      if (isfinite(pointLow) && (!isfinite(low) || pointLow < low)) low = pointLow;
+      if (isfinite(pointGust) && (!isfinite(maxGust) || pointGust > maxGust)) {
+        maxGust = pointGust;
+      }
     }
   }
 
-  todayDoc.clear();
+  if (!dailyOk || !isfinite(high) || !isfinite(low)) {
+    String fallbackError;
+    if (!summarizeWundergroundAllHistory(todayYmd, high, low, maxGust, fallbackError)) {
+      errorOut = dailyError;
+      if (errorOut.length() && fallbackError.length()) errorOut += "; fallback: ";
+      errorOut += fallbackError;
+      return false;
+    }
+  }
 
+  // Commit today's REST-derived summary before the independent
+  // yesterday request. If yesterday fails, retain any previous delta
+  // while still updating high/low from the provider.
+  wx.todayHighF = high;
+  wx.todayLowF = low;
+  wx.maxDailyGustMph = maxGust;
+  wx.summaryValid = isfinite(wx.todayHighF) && isfinite(wx.todayLowF);
+  wx.summaryFetchedMs = millis();
+
+  DynamicJsonDocument yesterdayDoc(32768);
   String yesterdayError;
-  if (!fetchHistoryDate(yesterdayYmd, todayDoc, yesterdayError)) {
+  if (!fetchHistoryDate(yesterdayYmd, yesterdayDoc, yesterdayError)) {
     errorOut = yesterdayError;
     return false;
   }
@@ -296,7 +434,7 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
   float yesterday = NAN;
   uint64_t bestDifference = UINT64_MAX;
 
-  for (JsonObject point : todayDoc["observations"].as<JsonArray>()) {
+  for (JsonObject point : yesterdayDoc["observations"].as<JsonArray>()) {
     uint64_t epoch = point["epoch"] | 0ULL;
     JsonObject imperial = point["imperial"].as<JsonObject>();
     float pointTemp = wuFloat(imperial["tempAvg"]);
@@ -312,13 +450,19 @@ bool fetchWeatherUndergroundSummary(String &errorOut) {
     }
   }
 
-  wx.todayHighF = high;
-  wx.todayLowF = low;
-  wx.maxDailyGustMph = maxGust;
+  if (!isfinite(yesterday)) {
+    errorOut = "Weather Underground REST history did not contain yesterday temperature";
+    return false;
+  }
+
   wx.yesterdayTempF = yesterday;
-  wx.fromYesterdayF = isfinite(yesterday) ? wx.tempF - yesterday : NAN;
-  wx.summaryValid = isfinite(wx.todayHighF) && isfinite(wx.todayLowF);
+  wx.fromYesterdayF = wx.tempF - yesterday;
   wx.summaryFetchedMs = millis();
+
+  Serial.printf(
+    "Weather Underground REST summary: high=%.2fF low=%.2fF yesterday=%.2fF delta=%+.2fF\n",
+    wx.todayHighF, wx.todayLowF, wx.yesterdayTempF, wx.fromYesterdayF
+  );
   return true;
 }
 
