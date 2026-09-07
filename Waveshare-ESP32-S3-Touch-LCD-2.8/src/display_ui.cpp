@@ -83,10 +83,30 @@ void drawWindIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x,
 void drawCompassIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_COMPASS); }
 
 void drawRoundedRectCard(int x, int y, int w, int h) {
-  uint16_t bg = rgb565(2, 25, 43);
-  uint16_t border = rgb565(10, 63, 100);
+  const uint16_t bg = rgb565(3, 27, 45);
+  const uint16_t border = rgb565(11, 82, 119);
   gfx->fillRoundRect(x, y, w, h, 8, bg);
   gfx->drawRoundRect(x, y, w, h, 8, border);
+}
+
+static void printBoldAt(int x, int y, const String &text, uint16_t color, uint8_t size) {
+  setText(color, size);
+  gfx->setCursor(x, y);
+  gfx->print(text);
+  gfx->setCursor(x + 1, y);
+  gfx->print(text);
+}
+
+static void centerBoldText(const String &text, int centerX, int y, uint8_t size, uint16_t color) {
+  setText(color, size);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  int x = centerX - (int)w / 2;
+  gfx->setCursor(x, y);
+  gfx->print(text);
+  gfx->setCursor(x + 1, y);
+  gfx->print(text);
 }
 
 void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
@@ -111,45 +131,35 @@ String signedTempDelta(float value) {
 }
 
 void drawForecastHighLowCard() {
-  const uint16_t cyan = rgb565(65, 205, 255);
-  const uint16_t yellow = rgb565(255, 195, 25);
+  const uint16_t cyan = rgb565(78, 215, 255);
+  const uint16_t muted = rgb565(165, 190, 205);
+  const uint16_t yellow = rgb565(255, 205, 35);
   const bool tomorrow = forecastShowsTomorrow();
+
   drawRoundedRectCard(143, 201, 87, 68);
-  drawSunIcon(158, 228, yellow);
-  setText(C_WHITE, 1);
-  gfx->setCursor(174, 211);
+  drawSunIcon(157, 236, yellow);
+
+  printBoldAt(174, 207, tomorrow ? "TOMORROW" : "TODAY", cyan, 1);
+  printBoldAt(174, 219, "HIGH / LOW", muted, 1);
+
+  String hl = "-- / --";
   if (wx.forecastValid) {
     float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
     float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
     if (isfinite(high) && isfinite(low)) {
-      gfx->print(String(high, 1));
-      gfx->print(" / ");
-      gfx->print(String(low, 1));
-      gfx->print("F");
-    } else {
-      gfx->print("-- / --");
+      hl = String((int)lroundf(high)) + "/" + String((int)lroundf(low)) + "F";
     }
-  } else {
-    gfx->print("-- / --");
   }
-  setText(cyan, 1);
-  gfx->setCursor(174, 231);
-  gfx->print(tomorrow ? "Tomorrow" : "Today's");
-  gfx->setCursor(174, 244);
-  gfx->print("High / Low");
+  printBoldAt(174, 242, hl, C_WHITE, 1);
 }
 
 void headerText() {
-  const uint16_t cyan = rgb565(65, 205, 255);
+  const uint16_t cyan = rgb565(78, 215, 255);
 
-  setText(C_WHITE, 2);
-  gfx->setCursor(14, 17);
   String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
   if (station.length() > 16) station = station.substring(0, 16);
-  gfx->print(station);
+  printBoldAt(14, 17, station, C_WHITE, 2);
 
-  // Keep the calendar date, but no standalone live/current time. The footer
-  // retains the observation/update timestamp.
   setText(cyan, 1);
   String dateStr = currentDateText();
   int16_t x1, y1;
@@ -226,19 +236,19 @@ void drawWeatherScreen() {
   gfx->fillScreen(C_BLACK);
   headerText();
 
-  const uint16_t cyan = rgb565(65, 205, 255);
-  const uint16_t cardBg = rgb565(2, 25, 43);
+  const uint16_t cyan = rgb565(78, 215, 255);
+  const uint16_t cardBg = rgb565(3, 27, 45);
+  const uint16_t muted = rgb565(165, 190, 205);
   const uint16_t green = rgb565(120, 225, 70);
-  const uint16_t yellow = rgb565(255, 195, 25);
 
   float apparentF = apparentOutdoorF();
   RiskStyle risk = riskFor(apparentF);
 
-  // Large left apparent-temperature panel.
+  // Large apparent-temperature panel.
   gfx->fillRoundRect(10, 65, 128, 128, 12, risk.panel);
-  centerText(apparentTitle(), 74, 78, 2, C_WHITE);
+  centerBoldText(apparentTitle(), 74, 78, 2, C_WHITE);
 
-  String value = String(apparentF, 1);
+  String value = String((int)lroundf(apparentF));
   setText(C_WHITE, 5);
   int16_t x1, y1;
   uint16_t w, h;
@@ -253,84 +263,48 @@ void drawWeatherScreen() {
   gfx->print("F");
 
   gfx->fillRoundRect(22, 154, 104, 25, 7, risk.status);
-  centerText(apparentRiskLabel(), 74, 161, 2, C_WHITE);
+  centerBoldText(apparentRiskLabel(), 74, 162, 1, C_WHITE);
 
-  // Four stacked right-side mockup cards.
+  // Right-side cards: label on top, bold value underneath.
   drawRoundedRectCard(143, 65, 87, 29);
   drawThermometer(150, 68, rgb565(255, 70, 55));
-  setText(C_WHITE, 2);
-  gfx->setCursor(170, 69);
-  gfx->print(String(wx.tempF, 1));
-  gfx->print("F");
-  setText(cyan, 1);
-  gfx->setCursor(170, 85);
-  gfx->print("Outdoor Temp");
+  printBoldAt(169, 67, "TEMP", cyan, 1);
+  printBoldAt(169, 77, String(wx.tempF, 1) + "F", C_WHITE, 2);
 
   drawRoundedRectCard(143, 98, 87, 29);
   drawDrop(158, 101, rgb565(50, 165, 255));
-  setText(C_WHITE, 2);
-  gfx->setCursor(170, 102);
-  gfx->print(String((int)lroundf(wx.humidity)));
-  gfx->print("%");
-  setText(cyan, 1);
-  gfx->setCursor(170, 118);
-  gfx->print("Rel. Humidity");
+  printBoldAt(169, 100, "HUMIDITY", cyan, 1);
+  printBoldAt(169, 110, String((int)lroundf(wx.humidity)) + "%", C_WHITE, 2);
 
   drawRoundedRectCard(143, 131, 87, 29);
   drawLeaf(157, 145, green);
-  setText(C_WHITE, 2);
-  gfx->setCursor(170, 135);
-  gfx->print(isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + "F" : "--");
-  setText(cyan, 1);
-  gfx->setCursor(170, 151);
-  gfx->print("Dew Point");
+  printBoldAt(169, 133, "DEW POINT", cyan, 1);
+  printBoldAt(169, 143, isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + "F" : "--", C_WHITE, 2);
 
   drawRoundedRectCard(143, 164, 87, 29);
   drawTrend(149, 170, cyan);
-  setText(C_WHITE, 2);
-  gfx->setCursor(170, 168);
-  gfx->print(signedTempDelta(wx.fromYesterdayF));
-  setText(cyan, 1);
-  gfx->setCursor(170, 184);
-  gfx->print("From Yesterday");
+  printBoldAt(169, 166, "FROM YDAY", cyan, 1);
+  printBoldAt(169, 178, signedTempDelta(wx.fromYesterdayF), C_WHITE, 1);
 
-  // Bottom mockup cards.
-  //
-  // Wind + Direction now split the exact 128-pixel width of the large
-  // apparent-temperature panel (x=10..137) into two equal 62-pixel cards
-  // separated by a 4-pixel gutter.
+  // Bottom cards keep the approved geometry but use a clearer label/value hierarchy.
   drawRoundedRectCard(10, 201, 62, 68);
-  drawWindIcon(16, 216, cyan);
-  setText(C_WHITE, 2);
-  gfx->setCursor(34, 211);
-  gfx->print(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--");
-  setText(cyan, 1);
-  gfx->setCursor(17, 237);
-  gfx->print("mph  Gust ");
-  gfx->print(isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--");
-  gfx->setCursor(17, 252);
-  gfx->print("Max ");
-  gfx->print(isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--");
+  drawWindIcon(16, 219, cyan);
+  centerBoldText("WIND", 41, 205, 1, cyan);
+  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 42, 220, 2, C_WHITE);
+  centerBoldText("mph", 41, 239, 1, muted);
+  centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"), 41, 250, 1, cyan);
+  centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"), 41, 259, 1, cyan);
 
   drawRoundedRectCard(76, 201, 62, 68);
-  drawCompassIcon(92, 228, cyan);
-  setText(C_WHITE, 2);
-  gfx->setCursor(106, 211);
-  if (isfinite(wx.windDirDeg)) {
-    gfx->print((int)lroundf(wx.windDirDeg));
-    gfx->print((char)247);
-  } else {
-    gfx->print("--");
-  }
-  setText(cyan, 1);
-  gfx->setCursor(106, 234);
-  String dirLong = directionLongText(wx.windDirDeg);
-  if (dirLong.length() > 7) dirLong = directionText(wx.windDirDeg);
-  gfx->print(dirLong);
+  drawCompassIcon(92, 230, cyan);
+  centerBoldText("DIRECTION", 107, 205, 1, cyan);
+  String degText = isfinite(wx.windDirDeg)
+                 ? String((int)lroundf(wx.windDirDeg)) + String((char)247)
+                 : "--";
+  centerBoldText(degText, 108, 221, 2, C_WHITE);
+  centerBoldText(isfinite(wx.windDirDeg) ? directionText(wx.windDirDeg) : "--", 107, 247, 1, cyan);
 
-  // Forecast High / Low keeps the approved geometry and alternates Today/Tomorrow.
   drawForecastHighLowCard();
-
   drawFooter();
 }
 

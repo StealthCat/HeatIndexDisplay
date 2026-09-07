@@ -138,10 +138,16 @@ void drawTrendIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x
 void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
 
 void drawMetricCard(int x, int y, int w, int h) {
-  uint16_t bg = rgb565(2, 25, 43);
-  uint16_t border = rgb565(10, 63, 100);
+  const uint16_t bg = rgb565(3, 27, 45);
+  const uint16_t border = rgb565(11, 82, 119);
   display.fillRoundRect(x, y, w, h, 7, bg);
   display.drawRoundRect(x, y, w, h, 7, border);
+}
+
+static void drawBoldText(const String &text, int x, int y, uint16_t color) {
+  display.setTextColor(color);
+  display.drawString(text, x, y);
+  display.drawString(text, x + 1, y);
 }
 
 String signedTempDelta(float value) {
@@ -154,15 +160,17 @@ String signedTempDelta(float value) {
 }
 
 void drawForecastHighLowCard() {
-  const uint16_t cyan = rgb565(65, 205, 255);
-  const uint16_t yellow = rgb565(255, 195, 25);
-  const uint16_t cardBg = rgb565(2, 25, 43);
+  const uint16_t cyan = rgb565(78, 215, 255);
+  const uint16_t yellow = rgb565(255, 205, 35);
   const bool tomorrow = forecastShowsTomorrow();
+
   drawMetricCard(7, 258, 156, 29);
   drawSunIcon(20, 272, yellow);
+
   display.setTextDatum(textdatum_t::middle_left);
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, cardBg);
+  display.setFont(&fonts::Font0);
+  drawBoldText(tomorrow ? "TOMORROW HIGH / LOW" : "TODAY HIGH / LOW", 37, 264, cyan);
+
   String hl = "-- / --";
   if (wx.forecastValid) {
     float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
@@ -171,15 +179,13 @@ void drawForecastHighLowCard() {
       hl = String(high, 1) + " / " + String(low, 1) + "F";
     }
   }
-  display.drawString(hl, 37, 267);
-  display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, cardBg);
-  display.drawString(tomorrow ? "Tomorrow High / Low" : "Today's High / Low", 37, 281);
+
+  display.setFont(&fonts::Font2);
+  drawBoldText(hl, 37, 278, C_WHITE);
 }
 
 
 void drawHeader() {
-  display.setTextColor(C_WHITE, C_BLACK);
   display.setTextDatum(textdatum_t::middle_left);
 
   String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
@@ -190,10 +196,7 @@ void drawHeader() {
     if (station.length() > 18) station = station.substring(0, 18);
   }
 
-  // Production V6: station name only. Do not show a live/current clock in
-  // the T-Display header. The footer's "Updated ..." value is the weather
-  // observation timestamp and is intentionally retained.
-  display.drawString(station, 8, 24);
+  drawBoldText(station, 8, 24, C_WHITE);
   display.drawFastHLine(8, 48, 154, rgb565(45, 205, 235));
 }
 
@@ -266,24 +269,23 @@ void drawWeatherScreen() {
   display.fillScreen(C_BLACK);
   drawHeader();
 
-  const uint16_t cyan = rgb565(65, 205, 255);
+  const uint16_t cyan = rgb565(78, 215, 255);
   const uint16_t muted = rgb565(165, 190, 205);
   const uint16_t green = rgb565(120, 225, 70);
-  const uint16_t yellow = rgb565(255, 195, 25);
+  const uint16_t cardBg = rgb565(3, 27, 45);
 
   float apparentF = apparentOutdoorF();
   RiskStyle risk = riskFor(apparentF);
 
-  // Main HEAT INDEX / WIND CHILL card
+  // Main apparent-temperature card.
   display.fillRoundRect(8, 54, 154, 88, 10, risk.panel);
-
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, risk.panel);
-  display.drawString(apparentTitle(), 85, 66);
+  drawBoldText(apparentTitle(), 85, 66, C_WHITE);
 
   String value = String((int)lroundf(apparentF));
   display.setFont(&fonts::Font7);
+  display.setTextColor(C_WHITE);
   display.drawString(value, 73, 96);
 
   int valueWidth = display.textWidth(value);
@@ -295,72 +297,71 @@ void drawWeatherScreen() {
 
   display.fillRoundRect(16, 118, 138, 18, 6, risk.status);
   display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, risk.status);
-  display.drawString(apparentRiskLabel(), 85, 127);
+  drawBoldText(apparentRiskLabel(), 85, 127, C_WHITE);
 
-  // Temperature / Humidity
-  drawMetricCard(7, 147, 77, 34);
-  drawThermometer(13, 151, rgb565(255, 70, 55));
+  // Compact metric cards use a consistent hierarchy: label first, value below.
   display.setTextDatum(textdatum_t::middle_left);
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  String tempText = String(wx.tempF, 1) + "F";
-  display.drawString(tempText, 29, 158);
-  display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString("Temp", 29, 174);
 
+  // Temperature
+  drawMetricCard(7, 147, 77, 34);
+  drawThermometer(13, 153, rgb565(255, 70, 55));
+  display.setFont(&fonts::Font0);
+  drawBoldText("TEMP", 29, 154, cyan);
+  display.setFont(&fonts::Font2);
+  drawBoldText(String(wx.tempF, 1) + "F", 29, 170, C_WHITE);
+
+  // Humidity
   drawMetricCard(87, 147, 76, 34);
-  drawDrop(99, 151, rgb565(50, 165, 255));
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  display.drawString(String((int)lroundf(wx.humidity)) + "%", 113, 158);
+  drawDrop(99, 153, rgb565(50, 165, 255));
   display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString("Humidity", 113, 174);
+  drawBoldText("HUMIDITY", 113, 154, cyan);
+  display.setFont(&fonts::Font2);
+  drawBoldText(String((int)lroundf(wx.humidity)) + "%", 113, 170, C_WHITE);
 
-  // Dew point / From Yesterday
+  // Dew point
   drawMetricCard(7, 184, 77, 34);
-  drawLeafIcon(19, 197, green);
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  display.drawString(isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + "F" : "--", 31, 195);
+  drawLeafIcon(19, 198, green);
   display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString("Dew Point", 31, 211);
+  drawBoldText("DEW POINT", 31, 191, cyan);
+  display.setFont(&fonts::Font2);
+  drawBoldText(isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + "F" : "--", 31, 207, C_WHITE);
 
+  // Difference from yesterday
   drawMetricCard(87, 184, 76, 34);
-  drawTrendIcon(94, 193, cyan);
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  display.drawString(signedTempDelta(wx.fromYesterdayF), 113, 195);
+  drawTrendIcon(94, 195, cyan);
   display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString("From Yesterday", 94, 211);
+  drawBoldText("VS YDAY", 113, 191, cyan);
+  display.setFont(&fonts::Font2);
+  drawBoldText(signedTempDelta(wx.fromYesterdayF), 113, 207, C_WHITE);
 
-  // Wind / Direction
+  // Wind / gust
   drawMetricCard(7, 221, 77, 34);
-  drawWindIcon(13, 232, cyan);
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  display.drawString(isfinite(wx.windMph) ? String(wx.windMph, 1) + " mph" : "--", 32, 231);
+  drawWindIcon(13, 231, cyan);
   display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString(isfinite(wx.gustMph) ? "Gust " + String(wx.gustMph, 1) : "Wind", 32, 247);
+  drawBoldText("W/G MPH", 29, 228, cyan);
+  String windLine = isfinite(wx.windMph) ? String(wx.windMph, 1) : "--";
+  windLine += " / ";
+  windLine += isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--";
+  display.setFont(&fonts::Font0);
+  drawBoldText(windLine, 29, 245, C_WHITE);
 
+  // Direction
   drawMetricCard(87, 221, 76, 34);
-  drawCompassIcon(100, 238, rgb565(225, 235, 245));
-  display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE, rgb565(2, 25, 43));
-  String degText = isfinite(wx.windDirDeg) ? String((int)lroundf(wx.windDirDeg)) + String("\xB0") : "--";
-  display.drawString(degText, 115, 231);
+  drawCompassIcon(100, 238, cyan);
   display.setFont(&fonts::Font0);
-  display.setTextColor(cyan, rgb565(2, 25, 43));
-  display.drawString(isfinite(wx.windDirDeg) ? directionText(wx.windDirDeg) : "Direction", 115, 247);
+  drawBoldText("DIR", 115, 228, cyan);
+  String degText = isfinite(wx.windDirDeg)
+                 ? String((int)lroundf(wx.windDirDeg)) + String("\xB0")
+                 : "--";
+  String dirLine = degText;
+  if (isfinite(wx.windDirDeg)) {
+    dirLine += " ";
+    dirLine += directionText(wx.windDirDeg);
+  }
+  display.setFont(&fonts::Font0);
+  drawBoldText(dirLine, 115, 245, C_WHITE);
 
-  // Forecast high / low card alternates Today and Tomorrow every 30 seconds.
   drawForecastHighLowCard();
-
   drawFooter();
 }
 

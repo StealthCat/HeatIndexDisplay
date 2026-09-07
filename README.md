@@ -79,3 +79,8 @@ Live Weather Underground summaries now prefer `/v2/pws/observations/hourly/7day`
 ## Production Release V7.9
 
 The High / Low card now uses forecast data rather than observed daily extrema. Both weather-source modes obtain station coordinates from their current-observation payload, then request a two-day daily forecast from Open-Meteo. The card alternates Today and Tomorrow every 30 seconds without changing the approved card geometry. Forecast data refreshes every 15 minutes, with a 60-second retry until the first successful forecast. See `RELEASE_V7_9_FORECAST_HIGH_LOW.md`.
+
+
+## V7.10 display polish
+
+The production UI now uses a stronger visual hierarchy: labels appear above values in the compact metric cards, values and labels are rendered more boldly, and the wind/direction/forecast cards are easier to scan while preserving the existing display geometry.
