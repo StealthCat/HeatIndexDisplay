@@ -63,7 +63,7 @@ bool fetchAmbientDevices(DynamicJsonDocument &doc, String &errorOut) {
   HTTPClient http;
   http.setConnectTimeout(10000);
   http.setTimeout(12000);
-  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
+  http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
 
   respectAmbientRateLimit();
 
@@ -238,7 +238,7 @@ bool fetchAmbientSummary(String &errorOut) {
     HTTPClient http;
     http.setConnectTimeout(10000);
     http.setTimeout(15000);
-    http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8");
+    http.setUserAgent("WS5000-ApparentTemp-ESP32/7.8.1");
 
     respectAmbientRateLimit();
 
@@ -334,7 +334,7 @@ bool fetchAmbientSummary(String &errorOut) {
 
   DynamicJsonDocument yesterdayDoc(1024);
   String yesterdayError;
-  if (!fetchHistory(targetYesterdayMs, 2, yesterdayDoc, yesterdayError)) {
+  if (!fetchHistory(targetYesterdayMs + 1800000ULL, 24, yesterdayDoc, yesterdayError)) {
     errorOut = yesterdayError;
     return false;
   }

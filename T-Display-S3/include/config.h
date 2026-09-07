@@ -16,5 +16,7 @@
 
 #define AMBIENT_DEVICES_URL       "https://rt.ambientweather.net/v1/devices"
 #define WUNDERGROUND_CURRENT_URL  "https://api.weather.com/v2/pws/observations/current"
+#define WUNDERGROUND_RECENT_1DAY_URL "https://api.weather.com/v2/pws/observations/all/1day"
+#define WUNDERGROUND_RECENT_7DAY_HOURLY_URL "https://api.weather.com/v2/pws/observations/hourly/7day"
 #define WUNDERGROUND_HISTORY_URL  "https://api.weather.com/v2/pws/history/all"
 #define WUNDERGROUND_DAILY_HISTORY_URL "https://api.weather.com/v2/pws/history/daily"

@@ -13,9 +13,9 @@ The production UI is designed to match the following Heat Index and Wind Chill l
 
 ![HeatIndexDisplay production mockup showing T-Display S3 and Waveshare 2.8-inch displays in Heat Index and Wind Chill modes](docs/weather_dashboard_device_comparison.webp)
 
-## Current release: V7.8
+## Current release: V7.8.1
 
-V7.8 keeps the approved production layouts and selectable weather provider, and makes the displayed Today High/Low and From Yesterday values explicitly REST-derived from the configured provider. Ambient uses its device-history REST API; Weather Underground uses its PWS daily/all-history REST APIs with fallback handling.
+V7.8.1 keeps the approved production layouts and provider selection while making live provider summaries more reliable. Ambient widens its same-time-yesterday REST window. Weather Underground now prefers recent 7-day hourly REST observations for Today High/Low and From Yesterday, then falls back to recent 1-day and archived history products.
 
 ### Compile-time defaults
 
@@ -69,3 +69,8 @@ Adds a web-selectable **Ambient Weather / Weather Underground** source. Weather 
 ## Production Release V7.8
 
 Today High/Low and From Yesterday are fetched from the REST history API belonging to the selected weather source. Ambient uses explicit current and same-local-time-yesterday history queries. Weather Underground prefers the daily-summary REST endpoint for Today High/Low and uses all-history data for the same local time yesterday, with an all-history fallback for the current-day summary. See `RELEASE_V7_8_PROVIDER_REST_SUMMARY.md`.
+
+
+## Production Release V7.8.1
+
+Live Weather Underground summaries now prefer `/v2/pws/observations/hourly/7day`, use provider-local `obsTimeLocal` for today/yesterday matching, and fall back through `/observations/all/1day` and archived history. Ambient widens the same-time-yesterday REST window. See `RELEASE_V7_8_1_LIVE_PROVIDER_SUMMARY_FIX.md`.
