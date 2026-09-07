@@ -88,11 +88,16 @@ void handleRoot() {
       html += F("&deg;F</b><br>");
     }
 
-    if (wx.summaryValid) {
-      html += F("Today's high / low: <b>");
-      html += String(wx.todayHighF, 1);
+    if (wx.forecastValid) {
+      html += F("Forecast today high / low: <b>");
+      html += String(wx.forecastTodayHighF, 1);
       html += F("&deg;F / ");
-      html += String(wx.todayLowF, 1);
+      html += String(wx.forecastTodayLowF, 1);
+      html += F("&deg;F</b><br>");
+      html += F("Forecast tomorrow high / low: <b>");
+      html += String(wx.forecastTomorrowHighF, 1);
+      html += F("&deg;F / ");
+      html += String(wx.forecastTomorrowLowF, 1);
       html += F("&deg;F</b><br>");
     }
 
@@ -106,7 +111,18 @@ void handleRoot() {
     html += F("</p>");
   } else {
     html += F("<p class='muted'>");
-    if (lastApiError.length()) {
+    if (lastForecastHttpCode) {
+    html += F("<tr><th>Forecast HTTP code</th><td>");
+    html += String(lastForecastHttpCode);
+    html += F("</td></tr>");
+  }
+  if (lastForecastError.length()) {
+    html += F("<tr><th>Forecast warning</th><td class='bad'>");
+    html += htmlEscape(lastForecastError);
+    html += F("</td></tr>");
+  }
+
+  if (lastApiError.length()) {
       html += htmlEscape(lastApiError);
     } else {
       html += F("Waiting for the first successful weather-source poll.");
@@ -222,7 +238,7 @@ void handleConfig() {
   html += F("<option value='wunderground'");
   if (usingWeatherUnderground()) html += F(" selected");
   html += F(">Weather Underground</option></select></label>");
-  html += F("<p class='muted'>The selected source is used for current conditions and its REST history API supplies From Yesterday and Today's High / Low.</p></div>");
+  html += F("<p class='muted'>The selected source is used for current conditions and its REST history API supplies From Yesterday. Forecast High / Low uses the station coordinates with the Open-Meteo forecast REST API.</p></div>");
 
   html += F("<div class='card'><h2>AmbientWeather.net</h2>");
   html += F("<p class='muted'>Ambient requires both an Application Key and an API Key. Saved secrets are never rendered back into the page.</p>");
@@ -505,8 +521,14 @@ String jsonStatus() {
       s += ",\"from_yesterday_f\":" + String(wx.fromYesterdayF, 2);
     }
     if (wx.summaryValid) {
-      s += ",\"today_high_f\":" + String(wx.todayHighF, 2);
-      s += ",\"today_low_f\":" + String(wx.todayLowF, 2);
+      s += ",\"observed_today_high_f\":" + String(wx.todayHighF, 2);
+      s += ",\"observed_today_low_f\":" + String(wx.todayLowF, 2);
+    }
+    if (wx.forecastValid) {
+      s += ",\"forecast_today_high_f\":" + String(wx.forecastTodayHighF, 2);
+      s += ",\"forecast_today_low_f\":" + String(wx.forecastTodayLowF, 2);
+      s += ",\"forecast_tomorrow_high_f\":" + String(wx.forecastTomorrowHighF, 2);
+      s += ",\"forecast_tomorrow_low_f\":" + String(wx.forecastTomorrowLowF, 2);
     }
     s += ",\"observation_age_seconds\":" + String(observationAgeSeconds());
     s += ",\"stale\":";
