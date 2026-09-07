@@ -88,3 +88,7 @@ The production UI now uses a stronger visual hierarchy: labels appear above valu
 ## V7.11.5 production display refinement
 
 The emulator-approved display refinements have been promoted to production for both boards. LILYGO gains aligned metric cards and ONLINE/STALE footer status; Waveshare reallocates vertical space from the bottom Wind/Direction/Forecast row to the main and upper metric cards, while aligning the direction bearing with the compass and retaining the large forecast presentation. See `RELEASE_V7_11_5_PRODUCTION_DISPLAY_REFINEMENT.md`.
+
+## V7.11.6 Waveshare apparent-temperature alignment
+
+The Waveshare apparent-temperature value now centers the complete value/degree/F group rather than centering only the digits. This prevents three-digit heat-index values from pushing the degree marker and Fahrenheit label against the right side of the panel.

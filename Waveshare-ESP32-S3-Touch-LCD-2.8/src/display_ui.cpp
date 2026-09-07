@@ -259,17 +259,36 @@ void drawWeatherScreen() {
   centerBoldText(apparentTitle(), 74, 80, 2, C_WHITE);
 
   String value = String((int)lroundf(apparentF));
+
+  // Center the complete apparent-temperature group (value + degree mark + F),
+  // not just the numeric value. Centering only the digits pushed the degree/F
+  // pair against the right edge for three-digit heat indexes such as 100 F.
   setText(C_WHITE, 5);
   int16_t x1, y1;
   uint16_t w, h;
   gfx->getTextBounds(value, 0, 0, &x1, &y1, &w, &h);
-  int valX = 72 - (int)w / 2;
-  gfx->setCursor(valX, 110);
-  gfx->print(value);
-  gfx->drawCircle(valX + w + 5, 111, 3, C_WHITE);
 
   setText(C_WHITE, 2);
-  gfx->setCursor(valX + w + 12, 124);
+  int16_t fx1, fy1;
+  uint16_t fw, fh;
+  gfx->getTextBounds("F", 0, 0, &fx1, &fy1, &fw, &fh);
+
+  const int degreeRadius = 3;
+  const int valueDegreeGap = 4;
+  const int degreeFGap = 4;
+  const int groupWidth = (int)w + valueDegreeGap + (degreeRadius * 2) + degreeFGap + (int)fw;
+  const int groupLeft = 74 - groupWidth / 2;
+
+  setText(C_WHITE, 5);
+  gfx->setCursor(groupLeft, 110);
+  gfx->print(value);
+
+  const int degreeX = groupLeft + (int)w + valueDegreeGap + degreeRadius;
+  gfx->drawCircle(degreeX, 114, degreeRadius, C_WHITE);
+
+  const int fX = degreeX + degreeRadius + degreeFGap;
+  setText(C_WHITE, 2);
+  gfx->setCursor(fX, 124);
   gfx->print("F");
 
   gfx->fillRoundRect(18, 177, 112, 24, 7, risk.status);
