@@ -126,6 +126,7 @@ String signedTempDelta(float value) {
   String s;
   if (value >= 0.0f) s += "+";
   s += String(value, 1);
+  s += String((char)247);
   s += "F";
   return s;
 }
@@ -140,17 +141,19 @@ void drawForecastHighLowCard() {
   drawSunIcon(157, 236, yellow);
 
   printBoldAt(174, 207, tomorrow ? "TOMORROW" : "TODAY", cyan, 1);
-  printBoldAt(174, 219, "HIGH / LOW", muted, 1);
+  printBoldAt(174, 219, "HIGH / LOW F", muted, 1);
 
-  String hl = "-- / --";
-  if (wx.forecastValid) {
-    float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
-    float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
-    if (isfinite(high) && isfinite(low)) {
-      hl = String((int)lroundf(high)) + "/" + String((int)lroundf(low)) + "F";
-    }
+  float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
+  float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
+  if (wx.forecastValid && isfinite(high) && isfinite(low)) {
+    String highText = String((int)lroundf(high)) + String((char)247);
+    String lowText = String((int)lroundf(low)) + String((char)247);
+    printBoldAt(146, 239, highText, C_WHITE, 2);
+    printBoldAt(183, 244, " / ", C_WHITE, 1);
+    printBoldAt(191, 239, lowText, C_WHITE, 2);
+  } else {
+    printBoldAt(166, 239, "-- / --", C_WHITE, 2);
   }
-  printBoldAt(174, 242, hl, C_WHITE, 1);
 }
 
 void headerText() {
@@ -268,30 +271,30 @@ void drawWeatherScreen() {
   // Right-side cards: label on top, bold value underneath.
   drawRoundedRectCard(143, 65, 87, 29);
   drawThermometer(150, 68, rgb565(255, 70, 55));
-  printBoldAt(169, 67, "TEMP", cyan, 1);
-  printBoldAt(169, 77, String(wx.tempF, 1) + "F", C_WHITE, 2);
+  printBoldAt(169, 69, "TEMP", cyan, 1);
+  printBoldAt(169, 79, String(wx.tempF, 1) + String((char)247) + "F", C_WHITE, 2);
 
   drawRoundedRectCard(143, 98, 87, 29);
   drawDrop(158, 101, rgb565(50, 165, 255));
-  printBoldAt(169, 100, "HUMIDITY", cyan, 1);
-  printBoldAt(169, 110, String((int)lroundf(wx.humidity)) + "%", C_WHITE, 2);
+  printBoldAt(169, 102, "HUMIDITY", cyan, 1);
+  printBoldAt(169, 112, String((int)lroundf(wx.humidity)) + "%", C_WHITE, 2);
 
   drawRoundedRectCard(143, 131, 87, 29);
   drawLeaf(157, 145, green);
-  printBoldAt(169, 133, "DEW POINT", cyan, 1);
-  printBoldAt(169, 143, isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + "F" : "--", C_WHITE, 2);
+  printBoldAt(169, 135, "DEW POINT", cyan, 1);
+  printBoldAt(169, 145, isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String((char)247) + "F" : "--", C_WHITE, 2);
 
   drawRoundedRectCard(143, 164, 87, 29);
   drawTrend(149, 170, cyan);
-  printBoldAt(169, 166, "FROM YDAY", cyan, 1);
-  printBoldAt(169, 178, signedTempDelta(wx.fromYesterdayF), C_WHITE, 1);
+  printBoldAt(169, 168, "FROM YDAY", cyan, 1);
+  printBoldAt(169, 180, signedTempDelta(wx.fromYesterdayF), C_WHITE, 1);
 
   // Bottom cards keep the approved geometry but use a clearer label/value hierarchy.
   drawRoundedRectCard(10, 201, 62, 68);
-  drawWindIcon(16, 219, cyan);
+  drawWindIcon(16, 223, cyan);
   centerBoldText("WIND", 41, 205, 1, cyan);
-  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 42, 220, 2, C_WHITE);
-  centerBoldText("mph", 41, 239, 1, muted);
+  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 53, 220, 2, C_WHITE);
+  centerBoldText("mph", 53, 239, 1, muted);
   centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"), 41, 250, 1, cyan);
   centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"), 41, 259, 1, cyan);
 
