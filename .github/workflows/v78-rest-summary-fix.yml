@@ -1,0 +1,73 @@
+name: Publish V7.8 provider REST summaries - retry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/v78-rest-summary-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Run corrected V7.8 migration
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/v78-rest-summary.yml').read_text(encoding='utf-8')
+          start_marker = "          from pathlib import Path\n"
+          end_marker = "\n          PY\n\n      - name: Install PlatformIO"
+          start = workflow.index(start_marker)
+          end = workflow.index(end_marker, start)
+          script = textwrap.dedent(workflow[start:end])
+
+          # re.sub interprets backslash escapes in a replacement string. Use a
+          # callable replacement so C++ string literals containing \\n stay intact.
+          script = script.replace(
+              "ambient_summary + '\\n\\nbool pollAmbient',",
+              "lambda _m: ambient_summary + '\\n\\nbool pollAmbient',"
+          )
+          script = script.replace(
+              "wu_summary + '\\n\\nbool pollWeatherUnderground',",
+              "lambda _m: wu_summary + '\\n\\nbool pollWeatherUnderground',"
+          )
+
+          if "lambda _m: ambient_summary" not in script or "lambda _m: wu_summary" not in script:
+              raise SystemExit('Failed to patch migration replacement handling')
+
+          exec(compile(script, '<v78-migration>', 'exec'), {'__name__': '__main__'})
+          PY
+
+      - name: Install PlatformIO
+        run: python -m pip install --upgrade platformio
+
+      - name: Build T-Display S3
+        working-directory: T-Display-S3
+        run: platformio run
+
+      - name: Build Waveshare 2.8
+        working-directory: Waveshare-ESP32-S3-Touch-LCD-2.8
+        run: platformio run
+
+      - name: Commit and publish V7.8
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md RELEASE_V7_8_PROVIDER_REST_SUMMARY.md \
+            T-Display-S3/include/config.h T-Display-S3/src/ambient_weather.cpp T-Display-S3/src/wunderground_weather.cpp T-Display-S3/src/web_ui.cpp \
+            Waveshare-ESP32-S3-Touch-LCD-2.8/include/config.h Waveshare-ESP32-S3-Touch-LCD-2.8/src/ambient_weather.cpp Waveshare-ESP32-S3-Touch-LCD-2.8/src/wunderground_weather.cpp Waveshare-ESP32-S3-Touch-LCD-2.8/src/web_ui.cpp
+          git commit -m "V7.8 use configured provider REST APIs for summary data"
+          git push
