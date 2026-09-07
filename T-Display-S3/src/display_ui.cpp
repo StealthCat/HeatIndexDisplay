@@ -230,11 +230,17 @@ void drawFooter() {
 
   String footer = "Updated ";
   footer += updateClockText();
-  if (dataStale()) {
-    footer = "STALE - " + footer;
-    display.setTextColor(rgb565(255, 105, 90), bg);
-  }
-  display.drawString(footer, 85, 305);
+  const bool stale = dataStale();
+
+  display.setTextDatum(textdatum_t::middle_left);
+  display.setTextColor(stale ? rgb565(255, 105, 90) : C_WHITE, bg);
+  display.drawString(footer, 14, 305);
+
+  display.setTextDatum(textdatum_t::middle_right);
+  display.setTextColor(stale ? rgb565(255, 105, 90) : rgb565(80, 225, 110), bg);
+  display.drawString(stale ? "STALE" : "ONLINE", 156, 305);
+
+  display.setTextDatum(textdatum_t::middle_center);
 }
 
 void drawWaitingScreen() {
@@ -306,52 +312,52 @@ void drawWeatherScreen() {
 
   // Temperature
   drawMetricCard(7, 147, 77, 34);
-  drawThermometer(13, 153, rgb565(255, 70, 55));
+  drawThermometer(13, 154, rgb565(255, 70, 55));
   display.setFont(&fonts::Font0);
-  drawBoldText("TEMP", 29, 157, cyan);
+  drawBoldText("TEMP", 31, 157, cyan);
   display.setFont(&fonts::Font2);
-  drawBoldText(String(wx.tempF, 1) + String("\xB0") + "F", 29, 173, C_WHITE);
+  drawBoldText(String(wx.tempF, 1) + String("\xB0") + "F", 31, 171, C_WHITE);
 
   // Humidity
   drawMetricCard(87, 147, 76, 34);
-  drawDrop(99, 153, rgb565(50, 165, 255));
+  drawDrop(99, 154, rgb565(50, 165, 255));
   display.setFont(&fonts::Font0);
   drawBoldText("HUMIDITY", 113, 157, cyan);
   display.setFont(&fonts::Font2);
-  drawBoldText(String((int)lroundf(wx.humidity)) + "%", 113, 173, C_WHITE);
+  drawBoldText(String((int)lroundf(wx.humidity)) + "%", 113, 171, C_WHITE);
 
   // Dew point
   drawMetricCard(7, 184, 77, 34);
-  drawLeafIcon(19, 198, green);
+  drawLeafIcon(19, 201, green);
   display.setFont(&fonts::Font0);
   drawBoldText("DEW POINT", 31, 194, cyan);
   display.setFont(&fonts::Font2);
-  drawBoldText(isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String("\xB0") + "F" : "--", 31, 210, C_WHITE);
+  drawBoldText(isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String("\xB0") + "F" : "--", 31, 208, C_WHITE);
 
   // Difference from yesterday
   drawMetricCard(87, 184, 76, 34);
-  drawTrendIcon(94, 195, cyan);
+  drawTrendIcon(94, 191, cyan);
   display.setFont(&fonts::Font0);
   drawBoldText("VS YDAY", 113, 194, cyan);
   display.setFont(&fonts::Font2);
-  drawBoldText(signedTempDelta(wx.fromYesterdayF), 113, 210, C_WHITE);
+  drawBoldText(signedTempDelta(wx.fromYesterdayF), 113, 208, C_WHITE);
 
   // Wind / gust
   drawMetricCard(7, 221, 77, 34);
-  drawWindIcon(13, 232, cyan);
+  drawWindIcon(13, 230, cyan);
   display.setFont(&fonts::Font0);
   drawBoldText("W/G MPH", 31, 231, cyan);
   String windLine = isfinite(wx.windMph) ? String(wx.windMph, 1) : "--";
   windLine += " / ";
   windLine += isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--";
   display.setFont(&fonts::Font0);
-  drawBoldText(windLine, 34, 242, C_WHITE);
+  drawBoldText(windLine, 31, 245, C_WHITE);
 
   // Direction
   drawMetricCard(87, 221, 76, 34);
   drawCompassIcon(100, 238, cyan);
   display.setFont(&fonts::Font0);
-  drawBoldText("DIR", 115, 231, cyan);
+  drawBoldText("DIR", 113, 231, cyan);
   String degText = isfinite(wx.windDirDeg)
                  ? String((int)lroundf(wx.windDirDeg)) + String("\xB0")
                  : "--";
@@ -361,7 +367,7 @@ void drawWeatherScreen() {
     dirLine += directionText(wx.windDirDeg);
   }
   display.setFont(&fonts::Font0);
-  drawBoldText(dirLine, 115, 248, C_WHITE);
+  drawBoldText(dirLine, 113, 245, C_WHITE);
 
   drawForecastHighLowCard();
   drawFooter();

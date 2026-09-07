@@ -141,22 +141,25 @@ void drawForecastHighLowCard() {
   const uint16_t yellow = rgb565(255, 205, 35);
   const bool tomorrow = forecastShowsTomorrow();
 
-  drawRoundedRectCard(143, 201, 87, 68);
-  drawSunIcon(157, 236, yellow);
+  drawRoundedRectCard(143, 217, 87, 48);
+  drawSunIcon(157, 241, yellow);
 
-  printBoldAt(174, 207, tomorrow ? "TOMORROW" : "TODAY", cyan, 1);
-  printBoldAt(174, 219, "HIGH / LOW F", muted, 1);
+  printBoldAt(174, 219, tomorrow ? "TOMORROW" : "TODAY", cyan, 1);
+  printBoldAt(174, 229, "HIGH / LOW F", muted, 1);
 
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
   if (wx.forecastValid && isfinite(high) && isfinite(low)) {
     String highText = String((int)lroundf(high)) + String((char)247);
     String lowText = String((int)lroundf(low)) + String((char)247);
-    printBoldAt(146, 239, highText, C_WHITE, 2);
-    printBoldAt(183, 244, " / ", C_WHITE, 1);
-    printBoldAt(191, 239, lowText, C_WHITE, 2);
+    // Text size 2 is the largest classic-font scale that allows both
+    // degree-marked temperatures to fit this 87-pixel card. Spread the two
+    // values across the available width and keep the slash visually centered.
+    printBoldAt(148, 241, highText, C_WHITE, 2);
+    printBoldAt(183, 246, " / ", C_WHITE, 1);
+    printBoldAt(192, 241, lowText, C_WHITE, 2);
   } else {
-    printBoldAt(166, 239, "-- / --", C_WHITE, 2);
+    printBoldAt(166, 241, "-- / --", C_WHITE, 2);
   }
 }
 
@@ -252,8 +255,8 @@ void drawWeatherScreen() {
   RiskStyle risk = riskFor(apparentF);
 
   // Large apparent-temperature panel.
-  gfx->fillRoundRect(10, 65, 128, 128, 12, risk.panel);
-  centerBoldText(apparentTitle(), 74, 78, 2, C_WHITE);
+  gfx->fillRoundRect(10, 65, 128, 148, 12, risk.panel);
+  centerBoldText(apparentTitle(), 74, 80, 2, C_WHITE);
 
   String value = String((int)lroundf(apparentF));
   setText(C_WHITE, 5);
@@ -261,55 +264,55 @@ void drawWeatherScreen() {
   uint16_t w, h;
   gfx->getTextBounds(value, 0, 0, &x1, &y1, &w, &h);
   int valX = 72 - (int)w / 2;
-  gfx->setCursor(valX, 105);
+  gfx->setCursor(valX, 110);
   gfx->print(value);
-  gfx->drawCircle(valX + w + 5, 106, 3, C_WHITE);
+  gfx->drawCircle(valX + w + 5, 111, 3, C_WHITE);
 
   setText(C_WHITE, 2);
-  gfx->setCursor(valX + w + 12, 119);
+  gfx->setCursor(valX + w + 12, 124);
   gfx->print("F");
 
-  gfx->fillRoundRect(22, 154, 104, 25, 7, risk.status);
-  centerBoldText(apparentRiskLabel(), 74, 162, 1, C_WHITE);
+  gfx->fillRoundRect(18, 177, 112, 24, 7, risk.status);
+  centerBoldText(apparentRiskLabel(), 74, 184, 1, C_WHITE);
 
   // Right-side cards: label on top, bold value underneath.
-  drawRoundedRectCard(143, 65, 87, 29);
-  drawThermometer(150, 68, rgb565(255, 70, 55));
-  printBoldAt(169, 69, "TEMP", cyan, 1);
-  printBoldAt(169, 79, String(wx.tempF, 1) + String((char)247) + "F", C_WHITE, 2);
+  drawRoundedRectCard(143, 65, 87, 36);
+  drawThermometer(150, 73, rgb565(255, 70, 55));
+  printBoldAt(169, 76, "TEMP", cyan, 1);
+  printBoldAt(169, 91, String(wx.tempF, 1) + String((char)247) + "F", C_WHITE, 2);
 
-  drawRoundedRectCard(143, 98, 87, 29);
-  drawDrop(158, 101, rgb565(50, 165, 255));
-  printBoldAt(169, 102, "HUMIDITY", cyan, 1);
-  printBoldAt(169, 112, String((int)lroundf(wx.humidity)) + "%", C_WHITE, 2);
+  drawRoundedRectCard(143, 102, 87, 36);
+  drawDrop(158, 110, rgb565(50, 165, 255));
+  printBoldAt(169, 113, "HUMIDITY", cyan, 1);
+  printBoldAt(169, 128, String((int)lroundf(wx.humidity)) + "%", C_WHITE, 2);
 
-  drawRoundedRectCard(143, 131, 87, 29);
-  drawLeaf(157, 145, green);
-  printBoldAt(169, 135, "DEW POINT", cyan, 1);
-  printBoldAt(169, 145, isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String((char)247) + "F" : "--", C_WHITE, 2);
+  drawRoundedRectCard(143, 139, 87, 36);
+  drawLeaf(157, 157, green);
+  printBoldAt(169, 150, "DEW POINT", cyan, 1);
+  printBoldAt(169, 165, isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String((char)247) + "F" : "--", C_WHITE, 2);
 
-  drawRoundedRectCard(143, 164, 87, 29);
-  drawTrend(149, 170, cyan);
-  printBoldAt(169, 168, "FROM YDAY", cyan, 1);
-  printBoldAt(169, 180, signedTempDelta(wx.fromYesterdayF), C_WHITE, 1);
+  drawRoundedRectCard(143, 176, 87, 36);
+  drawTrend(149, 186, cyan);
+  printBoldAt(169, 187, "FROM YDAY", cyan, 1);
+  printBoldAt(169, 202, signedTempDelta(wx.fromYesterdayF), C_WHITE, 1);
 
   // Bottom cards keep the approved geometry but use a clearer label/value hierarchy.
-  drawRoundedRectCard(10, 201, 62, 68);
-  drawWindIcon(16, 223, cyan);
-  centerBoldText("WIND", 41, 205, 1, cyan);
-  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 53, 220, 2, C_WHITE);
-  centerBoldText("mph", 53, 239, 1, muted);
-  centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"), 41, 250, 1, cyan);
-  centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"), 41, 259, 1, cyan);
+  drawRoundedRectCard(10, 217, 62, 48);
+  drawWindIcon(16, 233, cyan);
+  centerBoldText("WIND", 41, 219, 1, cyan);
+  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 53, 229, 2, C_WHITE);
+  centerBoldText("mph", 53, 243, 1, muted);
+  centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"), 41, 251, 1, cyan);
+  centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"), 41, 258, 1, cyan);
 
-  drawRoundedRectCard(76, 201, 62, 68);
-  drawCompassIcon(92, 230, cyan);
-  centerBoldText("DIRECTION", 107, 205, 1, cyan);
+  drawRoundedRectCard(76, 217, 62, 48);
+  drawCompassIcon(92, 241, cyan);
+  centerBoldText("DIRECTION", 107, 219, 1, cyan);
   String degText = isfinite(wx.windDirDeg)
                  ? String((int)lroundf(wx.windDirDeg)) + String((char)247)
                  : "--";
-  centerBoldText(degText, 108, 221, 2, C_WHITE);
-  centerBoldText(isfinite(wx.windDirDeg) ? directionText(wx.windDirDeg) : "--", 107, 247, 1, cyan);
+  centerBoldText(degText, 116, 233, 2, C_WHITE);
+  centerBoldText(isfinite(wx.windDirDeg) ? directionText(wx.windDirDeg) : "--", 107, 253, 1, cyan);
 
   drawForecastHighLowCard();
   drawFooter();

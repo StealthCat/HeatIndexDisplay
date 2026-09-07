@@ -84,3 +84,7 @@ The High / Low card now uses forecast data rather than observed daily extrema. B
 ## V7.10 display polish
 
 The production UI now uses a stronger visual hierarchy: labels appear above values in the compact metric cards, values and labels are rendered more boldly, and the wind/direction/forecast cards are easier to scan while preserving the existing display geometry.
+
+## V7.11.5 production display refinement
+
+The emulator-approved display refinements have been promoted to production for both boards. LILYGO gains aligned metric cards and ONLINE/STALE footer status; Waveshare reallocates vertical space from the bottom Wind/Direction/Forecast row to the main and upper metric cards, while aligning the direction bearing with the compass and retaining the large forecast presentation. See `RELEASE_V7_11_5_PRODUCTION_DISPLAY_REFINEMENT.md`.
