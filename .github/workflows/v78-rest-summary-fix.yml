@@ -35,7 +35,7 @@ jobs:
           script = textwrap.dedent(workflow[start:end])
 
           # re.sub interprets backslash escapes in a replacement string. Use a
-          # callable replacement so C++ string literals containing \\n stay intact.
+          # callable replacement so C++ string literals keep literal backslash-n text.
           script = script.replace(
               "ambient_summary + '\\n\\nbool pollAmbient',",
               "lambda _m: ambient_summary + '\\n\\nbool pollAmbient',"
