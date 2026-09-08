@@ -339,9 +339,9 @@ def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
 
     if not wx.valid:
         out += [
-            card(8, 48, 154, 95, 11, True),
-            text(85, 84, "WAITING", 18, "middle", WHITE, "900"),
-            text(85, 108, "Weather API error" if api_error else "Fetching weather...",
+            card(8, 43, 154, 244, 11, True),
+            text(85, 148, "WAITING", 18, "middle", WHITE, "900"),
+            text(85, 177, "Weather API error" if api_error else "Fetching weather...",
                  7.2, "middle", MUTED, "600"),
         ]
     else:
@@ -432,9 +432,9 @@ def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
 
     if not wx.valid:
         out += [
-            card(10, 54, 128, 151, 12, True),
-            text(74, 112, "WAITING", 23, "middle", WHITE, "900"),
-            text(74, 146, "Weather API error" if api_error else "Fetching weather...",
+            card(10, 54, 220, 208, 12, True),
+            text(120, 143, "WAITING", 23, "middle", WHITE, "900"),
+            text(120, 176, "Weather API error" if api_error else "Fetching weather...",
                  8, "middle", MUTED, "600"),
         ]
     else:
@@ -573,11 +573,11 @@ def waveshare_7c_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
 
     if not wx.valid:
         out += [
-            card(33, 82, 734, 250, 18, True),
-            text(400, 155, "WAITING", 52, "middle", WHITE, "900"),
-            text(400, 220, "Weather API error" if api_error else "Preparing display",
+            card(33, 82, 734, 310, 18, True),
+            text(400, 188, "WAITING", 52, "middle", WHITE, "900"),
+            text(400, 245, "Weather API error" if api_error else "Preparing display",
                  24, "middle", MUTED, "600"),
-            text(400, 270, "Fetching weather..." if not api_error else "Check provider configuration",
+            text(400, 289, "Fetching weather..." if not api_error else "Check provider configuration",
                  18, "middle", "#72caff", "600"),
         ]
     else:

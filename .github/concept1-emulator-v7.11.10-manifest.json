@@ -9,7 +9,7 @@
     "emulator/app_controller.py": "acdf5bb5c7b5b79956bda7cb6778937ea272ebb21151c02af6bc8ff5e77cc77e",
     "emulator/app_state.py": "320e12662ebd8b190ec253397d0c20df4d5a34b27a1662285c3cac65c9b29142",
     "emulator/config_store.py": "9d2901df210fcbd4cb3709259b7288b8e810edba5e0995782f0bec7c05dcf6f1",
-    "emulator/display_ui.py": "6cae142eb9bd1a07d5d2b785db1a5478930bdafaf2ea1eea726d72602dc82ff0",
+    "emulator/display_ui.py": "cc0756faa21dcc643f3ee95a4b16e6d9560ebae50f43bd94f195a26eaf47b655",
     "emulator/forecast_weather.py": "73541e39563e87bec5c9c21f6c1a1e0b3b9b8e91bd88caccdf9daeb4592b1b56",
     "emulator/weather_math.py": "993b193608b6db8decf8d59dc099b6a4af4d2038101aade0f5c0956f44cc808c",
     "emulator/weather_source.py": "df4a1d65311b48c4c8881bbe39cc1b9acadef8a0d861a06af34b70edc9ca0cc4",
