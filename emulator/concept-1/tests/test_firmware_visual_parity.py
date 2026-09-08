@@ -47,6 +47,32 @@ class FirmwareVisualParityTests(unittest.TestCase):
             self.assertIn('Weather API error', error_svg)
             self.assertIn('Check provider configuration', error_svg)
 
+    def test_footer_state_badge_spacing_matches_lilygo_reference(self):
+        self.app.wx.valid = False
+        renders = [
+            tdisplay_svg(self.app.config, self.app.wx),
+            waveshare_svg(self.app.config, self.app.wx),
+            waveshare_7c_svg(self.app.config, self.app.wx),
+        ]
+        expected = [
+            ('cx="130" cy="304" r="2.4"', 'x="136" y="304"', '>OFFLINE</text>'),
+            ('cx="187" cy="290" r="3"', 'x="194" y="290"', '>OFFLINE</text>'),
+            ('cx="664" cy="436" r="5"', 'x="677" y="436"', '>OFFLINE</text>'),
+        ]
+        for svg, parts in zip(renders, expected):
+            for part in parts:
+                self.assertIn(part, svg)
+
+        sources = [
+            (ROOT / "T-Display-S3/src/display_ui.cpp", 'fillCircle(130, 304, 2', 'drawBoldText(state, 136, 304'),
+            (ROOT / "Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp", 'fillCircle(172, 290, 3', 'printBoldAt(179, 286, state'),
+            (ROOT / "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp", 'fillCircle(649, 436, 5', 'printBoldAt(662, 427, state'),
+        ]
+        for path, dot, label in sources:
+            src = path.read_text()
+            self.assertIn(dot, src)
+            self.assertIn(label, src)
+
     def test_firmware_sources_contain_current_pill_contract(self):
         targets = [
             ROOT / "T-Display-S3/src/display_ui.cpp",

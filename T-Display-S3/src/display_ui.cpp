@@ -371,30 +371,37 @@ void drawFooter() {
     display.drawString("Open /config", 85, 304);
     return;
   }
-  if (!wx.valid) {
-    display.setTextDatum(textdatum_t::middle_center);
-    display.setTextColor(lastApiError.length() ? red : C_WHITE);
-    display.drawString(lastApiError.length() ? "Weather API error" : "Fetching weather...", 85, 304);
-    return;
-  }
 
-  const bool stale = dataStale();
-  const uint16_t stateColor = stale ? red : green;
+  const bool offline = !wx.valid;
+  const bool stale = !offline && dataStale();
+  const uint16_t stateColor = offline ? red : (stale ? red : green);
+
   drawClockIcon(18, 304, muted);
 
-  String left = "Updated ";
-  left += updateClockText();
+  String left;
+  String state;
+  uint16_t leftColor = C_WHITE;
+  if (offline) {
+    left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
+    state = "OFFLINE";
+    leftColor = lastApiError.length() ? red : C_WHITE;
+  } else {
+    left = "Updated ";
+    left += updateClockText();
+    state = stale ? "STALE" : "ONLINE";
+    leftColor = stale ? red : C_WHITE;
+  }
 
+  // LILYGO is the visual reference: 4 px from dot edge to label.
   display.setTextDatum(textdatum_t::middle_left);
-  display.setTextColor(stale ? red : C_WHITE);
+  display.setTextSize(0.62f);
+  display.setTextColor(leftColor);
   display.drawString(left, 31, 304);
 
   display.drawFastVLine(119, 297, 13, rgb565(85, 115, 133));
   display.fillCircle(130, 304, 2, stateColor);
-
-  display.setTextDatum(textdatum_t::middle_right);
-  display.setTextColor(stateColor);
-  drawBoldText(stale ? "STALE" : "ONLINE", 157, 304, stateColor);
+  drawBoldText(state, 136, 304, stateColor);
+  display.setTextSize(1.0f);
 }
 
 

@@ -9,7 +9,7 @@
     "emulator/app_controller.py": "acdf5bb5c7b5b79956bda7cb6778937ea272ebb21151c02af6bc8ff5e77cc77e",
     "emulator/app_state.py": "320e12662ebd8b190ec253397d0c20df4d5a34b27a1662285c3cac65c9b29142",
     "emulator/config_store.py": "9d2901df210fcbd4cb3709259b7288b8e810edba5e0995782f0bec7c05dcf6f1",
-    "emulator/display_ui.py": "9c409be3bfaf994dd9629daf4360429ad1c3c21e228963040339e79f0ba6592c",
+    "emulator/display_ui.py": "3625535b14e17b77d1c0fe606638455830f6e221b31c3ade3f154ed449d95cf4",
     "emulator/forecast_weather.py": "73541e39563e87bec5c9c21f6c1a1e0b3b9b8e91bd88caccdf9daeb4592b1b56",
     "emulator/weather_math.py": "993b193608b6db8decf8d59dc099b6a4af4d2038101aade0f5c0956f44cc808c",
     "emulator/weather_source.py": "df4a1d65311b48c4c8881bbe39cc1b9acadef8a0d861a06af34b70edc9ca0cc4",
@@ -31,7 +31,7 @@
     "run_emulator.sh": "762616a26e28697d4e29cee7909a768c2acb2e6d754b34fde8c0fe18aba3ba3c",
     "tests/test_display_concept1.py": "21ac700b7b385aa74dfd613cd470d53656a6f718371b00e326a743d3e25f0e59",
     "tests/test_display_concept1_palettes.py": "69b227f0b8e92f3ee2a25264a146549532bac541d764aae86306c23ee51fb9bf",
-    "tests/test_firmware_visual_parity.py": "1c6ad5e81506029fd66d3f0e42616afb9f083afc1a02236b003436601ca8dfe3",
+    "tests/test_firmware_visual_parity.py": "7b0cc09c8530c7787210880ebb78ec0b8311a8823fa7009117d6e41c63b39e9f",
     "tests/test_forecast_v79.py": "80e3f1b10290b904e59b264c99421d2f4579f9f68453b872304c14df9748afbb",
     "tests/test_provider_rest_summary.py": "500390b16e6277349c29ac6ea168e0aa818bd6f878ffd07940374c59994938fd",
     "tests/test_waveshare_7c_box.py": "a55e28e9d94a3d1b93cc8b5fb2704a8005dfca4bb82c8a59f950a9d4302ef2d3",
@@ -40,12 +40,12 @@
   "firmware_sources": {
     "T-Display-S3/include/config.h": "d4fac5969cc0dcba39c02b3ae12cb966c4cbd7462d2e80ee2e674a8405c668c1",
     "T-Display-S3/src/ambient_weather.cpp": "7bd20a4ba1167ee46b498a90f873ae545c61a4751c0d166d1543ebf843d9fcd8",
-    "T-Display-S3/src/display_ui.cpp": "97fc718ffddeadd96475182c23063f5d97cdcda22b1c1f230a3eb2fb635c5e2c",
+    "T-Display-S3/src/display_ui.cpp": "3e701d25e5014083227a8a7bf46b7002705b0921a5cbc01dcb0a01fbdf65344a",
     "T-Display-S3/src/forecast_weather.cpp": "e8696391df4c575c9362f697dea77c3bd254801ae6bf1ee0bf48672b1e1031f5",
     "T-Display-S3/src/weather_math.cpp": "70e550b28f81d6cc42150ecf3f5d682d966186fbfc1289650ba8d1d056c53512",
     "T-Display-S3/src/wunderground_weather.cpp": "54b7ccd8fdabd6dc330617aff0ca2b238f33f4a536e51ff09d2982f7a38d12e7",
-    "Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp": "a3ede7dd53e9285025fab370f67187133e81bc7a92e5248ea8ed5720d30e1d04",
-    "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp": "d942a5f316e6311d52f7cdbb12c85be6f43868743fa2698a18c905acbe1f39c7"
+    "Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp": "f41f933b72a2f0c8485568cb5846521e2eaf46f40271ec6d1f6142a0409176bc",
+    "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp": "8c5077bfe56bb34c42fb9067f9fab89452924329ce32c92a396ef6bf0d0bbcf6"
   },
   "source_archive_sha256": "a83eeeaa97dc239f16b36f5df9c2a73a6a9d1b38d026a5cc6384a3c2c27eb275"
 }

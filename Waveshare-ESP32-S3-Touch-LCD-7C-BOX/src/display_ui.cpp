@@ -235,17 +235,30 @@ void drawFooter() {
     centerBoldText(setupApStarted ? "Setup: 192.168.4.1/config" : "Wi-Fi disconnected", 400, 427, 2, C_WHITE); return;
   }
   if (!apiConfigured()) { centerBoldText("Open /config", 400, 427, 2, C_WHITE); return; }
-  if (!wx.valid) {
-    centerBoldText(lastApiError.length() ? "Weather API error" : "Fetching weather...", 400, 427, 2, lastApiError.length() ? red : C_WHITE); return;
-  }
-  const bool stale = dataStale();
-  const uint16_t stateColor = stale ? red : green;
+
+  const bool offline = !wx.valid;
+  const bool stale = !offline && dataStale();
+  const uint16_t stateColor = offline ? red : (stale ? red : green);
   drawClockIcon(67, 436, muted);
-  String left = "Updated "; left += updateClockText();
-  printBoldAt(94, 427, left, stale ? red : C_WHITE, 2);
+
+  String left;
+  String state;
+  uint16_t leftColor = C_WHITE;
+  if (offline) {
+    left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
+    state = "OFFLINE";
+    leftColor = lastApiError.length() ? red : C_WHITE;
+  } else {
+    left = "Updated "; left += updateClockText();
+    state = stale ? "STALE" : "ONLINE";
+    leftColor = stale ? red : C_WHITE;
+  }
+  printBoldAt(94, 427, left, leftColor, 2);
   gfx->drawFastVLine(570, 419, 34, rgb565(85, 115, 133));
-  gfx->fillCircle(620, 436, 5, stateColor);
-  rightText(stale ? "STALE" : "ONLINE", 746, 427, 2, stateColor);
+
+  // 8 px at 800x480 gives the same apparent gap as LILYGO's 4 px.
+  gfx->fillCircle(649, 436, 5, stateColor);
+  printBoldAt(662, 427, state, stateColor, 2);
 }
 
 

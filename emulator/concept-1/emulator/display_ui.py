@@ -409,7 +409,7 @@ def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         text(34, 304, left, 5.6, "start", lc, "650"),
         '<line x1="119" y1="297" x2="119" y2="310" stroke="#557385" stroke-width=".7"/>',
         f'<circle cx="130" cy="304" r="2.4" fill="{rc}"/>',
-        text(157, 304, right, 5.5, "end", rc, "900"),
+        text(136, 304, right, 5.5, "start", rc, "900"),
         "</svg>",
     ]
     return "".join(out)
@@ -524,8 +524,8 @@ def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         _clock_icon(24, 290, 7),
         text(45, 290, left, 7.2, "start", lc, "650"),
         '<line x1="169" y1="280" x2="169" y2="300" stroke="#557385" stroke-width=".8"/>',
-        f'<circle cx="190" cy="290" r="3" fill="{rc}"/>',
-        text(221, 290, right, 7.2, "end", rc, "900"),
+        f'<circle cx="187" cy="290" r="3" fill="{rc}"/>',
+        text(194, 290, right, 7.2, "start", rc, "900"),
         "</svg>",
     ]
     return "".join(out)
@@ -655,8 +655,8 @@ def waveshare_7c_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         _clock_icon(67, 436, 12),
         text(94, 436, left, 15, "start", lc, "700"),
         '<line x1="570" y1="419" x2="570" y2="453" stroke="#557385" stroke-width="1"/>',
-        f'<circle cx="620" cy="436" r="5" fill="{rc}"/>',
-        text(746, 436, right, 15, "end", rc, "900", 1.0),
+        f'<circle cx="664" cy="436" r="5" fill="{rc}"/>',
+        text(677, 436, right, 15, "start", rc, "900", 1.0),
         "</svg>",
     ]
     return "".join(out)

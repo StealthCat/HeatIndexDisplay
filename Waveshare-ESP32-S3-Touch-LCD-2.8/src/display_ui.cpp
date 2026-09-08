@@ -332,29 +332,33 @@ void drawFooter() {
     centerBoldText("Open /config", 120, 285, 1, C_WHITE);
     return;
   }
-  if (!wx.valid) {
-    centerBoldText(lastApiError.length() ? "Weather API error" : "Fetching weather...",
-                   120, 285, 1, lastApiError.length() ? red : C_WHITE);
-    return;
-  }
 
-  const bool stale = dataStale();
-  const uint16_t stateColor = stale ? red : green;
+  const bool offline = !wx.valid;
+  const bool stale = !offline && dataStale();
+  const uint16_t stateColor = offline ? red : (stale ? red : green);
   drawClockIcon(24, 290, muted);
 
-  String left = "Updated ";
-  left += updateClockText();
-  printBoldAt(45, 286, left, stale ? red : C_WHITE, 1);
+  String left;
+  String state;
+  uint16_t leftColor = C_WHITE;
+  int leftX = 45;
+  if (offline) {
+    left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
+    state = "OFFLINE";
+    leftColor = lastApiError.length() ? red : C_WHITE;
+    leftX = 35;
+  } else {
+    left = "Updated ";
+    left += updateClockText();
+    state = stale ? "STALE" : "ONLINE";
+    leftColor = stale ? red : C_WHITE;
+  }
+  printBoldAt(leftX, 286, left, leftColor, 1);
 
-  gfx->drawFastVLine(169, 280, 20, rgb565(85, 115, 133));
-  gfx->fillCircle(190, 290, 3, stateColor);
-
-  String state = stale ? "STALE" : "ONLINE";
-  setText(stateColor, 1);
-  int16_t x1, y1;
-  uint16_t w, h;
-  gfx->getTextBounds(state, 0, 0, &x1, &y1, &w, &h);
-  printBoldAt(221 - (int)w, 286, state, stateColor, 1);
+  // Preserve the LILYGO visual contract: 4 px from dot edge to label.
+  gfx->drawFastVLine(151, 280, 20, rgb565(85, 115, 133));
+  gfx->fillCircle(172, 290, 3, stateColor);
+  printBoldAt(179, 286, state, stateColor, 1);
 }
 
 
