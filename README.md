@@ -2,10 +2,11 @@
 
 ESP32-S3 apparent-temperature displays for personal weather-station data from Ambient Weather or Weather Underground.
 
-The firmware automatically shows **Heat Index** in hot conditions and **Wind Chill** when NWS wind-chill conditions apply. It supports two production targets:
+The firmware automatically shows **Heat Index** in hot conditions and **Wind Chill** when NWS wind-chill conditions apply. It supports three production targets:
 
 - **LILYGO T-Display S3** — 170x320 ST7789, native LovyanGFX Parallel8 driver
 - **Waveshare ESP32-S3 Touch LCD 2.8** — 240x320 ST7789 SPI
+- **Waveshare ESP32-S3 Touch LCD 7C-BOX** — 800x480 ST7262 RGB565
 
 ## Display mockup
 
@@ -25,17 +26,20 @@ The repository intentionally ships with all credential fields blank. **Do not co
 
 ## Build
 
-Open either board directory as a PlatformIO project, or run:
+Open any board directory as a PlatformIO project, or run one of:
 
 ```bash
 cd T-Display-S3
 pio run
 ```
 
-or:
-
 ```bash
 cd Waveshare-ESP32-S3-Touch-LCD-2.8
+pio run
+```
+
+```bash
+cd Waveshare-ESP32-S3-Touch-LCD-7C-BOX
 pio run
 ```
 
@@ -92,3 +96,7 @@ The emulator-approved display refinements have been promoted to production for b
 ## V7.11.6 Waveshare apparent-temperature alignment
 
 The Waveshare apparent-temperature value now centers the complete value/degree/F group rather than centering only the digits. This prevents three-digit heat-index values from pushing the degree marker and Fahrenheit label against the right side of the panel.
+
+## Concept 1 — Waveshare ESP32-S3 Touch LCD 7C-BOX
+
+The `concept-1` branch adds an **800x480** build for the Waveshare ESP32-S3-Touch-LCD-7C-BOX. It retains the same Concept 1 information hierarchy as the 2.8-inch Waveshare display — station/date header, Current Conditions subtitle, apparent-temperature hero, four metric cards, Wind/Direction/Forecast row, and Updated/ONLINE footer — with dimensions and typography expanded for the 7-inch landscape panel. Touch input is not used. See `RELEASE_CONCEPT1_WAVESHARE_7C_BOX.md`.
