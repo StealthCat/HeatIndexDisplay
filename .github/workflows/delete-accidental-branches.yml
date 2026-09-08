@@ -1,0 +1,25 @@
+name: Delete accidental branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/delete-accidental-branches.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete accidental branches
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for branch in DO-NOT-USE TEMP4 TEMP5 temp-ignore temp-ignore-cleanup; do
+            git push "$remote" --delete "$branch"
+          done
