@@ -18,6 +18,7 @@ jobs:
         project:
           - T-Display-S3
           - Waveshare-ESP32-S3-Touch-LCD-2.8
+          - Waveshare-ESP32-S3-Touch-LCD-7C-BOX
 
     steps:
       - name: Checkout

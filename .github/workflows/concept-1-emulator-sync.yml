@@ -1,0 +1,109 @@
+name: Concept-1 Emulator Sync
+
+on:
+  push:
+    branches: [concept-1]
+    paths:
+      - 'README.md'
+      - 'emulator/concept-1/**'
+      - '.github/concept1-emulator-v7.11.10-manifest.json'
+      - '.github/workflows/concept-1-emulator-sync.yml'
+      - 'T-Display-S3/src/**'
+      - 'T-Display-S3/include/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-2.8/src/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-2.8/include/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-7C-BOX/include/**'
+  pull_request:
+    branches: [concept-1]
+    paths:
+      - 'README.md'
+      - 'emulator/concept-1/**'
+      - '.github/concept1-emulator-v7.11.10-manifest.json'
+      - 'T-Display-S3/src/**'
+      - 'T-Display-S3/include/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-2.8/src/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-2.8/include/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/**'
+      - 'Waveshare-ESP32-S3-Touch-LCD-7C-BOX/include/**'
+
+jobs:
+  verify-emulator-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enforce single Markdown documentation file
+        shell: bash
+        run: |
+          mapfile -t docs < <(find . -type f -name '*.md' -not -path './README.md' -not -path './.git/*' | sort)
+          if ((${#docs[@]})); then
+            printf 'Unexpected Markdown files:\n%s\n' "${docs[*]}"
+            exit 1
+          fi
+
+      - name: Verify functional emulator files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('emulator/concept-1')
+          manifest = json.loads(Path('.github/concept1-emulator-v7.11.10-manifest.json').read_text())
+          actual = {}
+          for p in root.rglob('*'):
+              if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc':
+                  actual[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
+          expected = manifest['files']
+          missing = sorted(set(expected) - set(actual))
+          extra = sorted(set(actual) - set(expected))
+          changed = sorted(k for k in set(expected) & set(actual) if expected[k] != actual[k])
+          if missing or extra or changed:
+              print('Missing:', missing)
+              print('Extra:', extra)
+              print('Changed:', changed)
+              raise SystemExit(1)
+          if len(actual) != manifest['file_count']:
+              raise SystemExit(f"file count mismatch: {len(actual)} != {manifest['file_count']}")
+          print(f"Functional emulator parity OK: {len(actual)} files")
+          PY
+
+      - name: Verify pinned production firmware sources
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          manifest = json.loads(Path('.github/concept1-emulator-v7.11.10-manifest.json').read_text())
+          expected = manifest.get('firmware_sources', {})
+          if not expected:
+              raise SystemExit('firmware_sources missing from emulator manifest')
+          changed = []
+          missing = []
+          for path, digest in expected.items():
+              p = Path(path)
+              if not p.exists():
+                  missing.append(path)
+                  continue
+              actual = hashlib.sha256(p.read_bytes()).hexdigest()
+              if actual != digest:
+                  changed.append(path)
+          if missing or changed:
+              print('Missing firmware sources:', missing)
+              print('Changed firmware sources:', changed)
+              raise SystemExit(1)
+          print(f"Firmware source pins OK: {len(expected)} files")
+          PY
+
+      - name: Verify current visual contract
+        shell: bash
+        run: |
+          ! grep -q 'icon("alert"' emulator/concept-1/emulator/display_ui.py
+          ! grep -q '>WEATHER STATION</text>' emulator/concept-1/preview_waveshare.svg
+          grep -q 'CURRENT CONDITIONS' emulator/concept-1/preview_waveshare.svg
+          grep -q 'def waveshare_7c_svg' emulator/concept-1/emulator/display_ui.py
+
+      - name: Run full emulator tests
+        working-directory: emulator/concept-1
+        run: python3 -m unittest discover -s tests -v
