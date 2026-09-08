@@ -311,7 +311,7 @@ void headerText() {
   gfx->setCursor(229 - w, 18);
   gfx->print(dateStr);
 
-  printBoldAt(12, 34, "WEATHER STATION", rgb565(157, 184, 202), 1);
+  printBoldAt(12, 34, "CURRENT CONDITIONS", rgb565(157, 184, 202), 1);
   gfx->drawFastHLine(12, 47, 216, rgb565(23, 63, 85));
 }
 
