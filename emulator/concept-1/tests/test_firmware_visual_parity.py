@@ -29,6 +29,24 @@ class FirmwareVisualParityTests(unittest.TestCase):
             self.assertIn('x2="0" y2="1"', svg)
             self.assertNotIn('fill="url(#riskCurrent)"', svg)
 
+    def test_waiting_state_matches_firmware_contract(self):
+        self.app.wx.valid = False
+        renders = [
+            (tdisplay_svg, 'x="8" y="43" width="154" height="244"'),
+            (waveshare_svg, 'x="10" y="54" width="220" height="208"'),
+            (waveshare_7c_svg, 'x="33" y="82" width="734" height="310"'),
+        ]
+        for render, geometry in renders:
+            svg = render(self.app.config, self.app.wx, forecast_elapsed_seconds=0)
+            self.assertIn('WAITING', svg)
+            self.assertIn('Preparing display', svg)
+            self.assertIn('Fetching weather...', svg)
+            self.assertIn(geometry, svg)
+
+            error_svg = render(self.app.config, self.app.wx, api_error='provider failed', forecast_elapsed_seconds=0)
+            self.assertIn('Weather API error', error_svg)
+            self.assertIn('Check provider configuration', error_svg)
+
     def test_firmware_sources_contain_current_pill_contract(self):
         targets = [
             ROOT / "T-Display-S3/src/display_ui.cpp",
@@ -39,7 +57,12 @@ class FirmwareVisualParityTests(unittest.TestCase):
             src = path.read_text()
             self.assertIn("apparentRiskLabel()", src)
             self.assertNotIn("ICON_ALERT", src)
+            self.assertIn('"Preparing display"', src)
+            self.assertIn('"Fetching weather..."', src)
         self.assertIn('"CURRENT CONDITIONS"', targets[1].read_text())
+        self.assertIn("drawConceptCard(8, 43, 154, 244", targets[0].read_text())
+        self.assertIn("drawConceptCard(10, 54, 220, 208", targets[1].read_text())
+        self.assertIn("drawConceptCard(33, 82, 734, 310", targets[2].read_text())
 
 if __name__ == "__main__":
     unittest.main()

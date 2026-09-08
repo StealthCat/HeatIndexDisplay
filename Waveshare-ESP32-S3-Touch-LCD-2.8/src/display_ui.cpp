@@ -357,23 +357,31 @@ void drawFooter() {
   printBoldAt(221 - (int)w, 286, state, stateColor, 1);
 }
 
+
 void drawWaitingScreen() {
   gfx->fillScreen(C_BLACK);
   headerText();
 
-  drawConceptCard(10, 54, 220, 150, 12, true);
-  centerBoldText(setupApStarted ? "SETUP" : "WAITING", 120, 100, 4, C_WHITE);
-  centerText(setupApStarted ? "Connect to setup Wi-Fi" : "Preparing display",
-             120, 145, 1, rgb565(159, 183, 201));
+  // Waiting state owns the complete content area between header and footer.
+  drawConceptCard(10, 54, 220, 208, 12, true);
+  centerBoldText(setupApStarted ? "SETUP" : "WAITING", 120, 127, 4, C_WHITE);
 
   if (setupApStarted) {
-    centerText(setupApName(), 120, 170, 1, rgb565(114, 202, 255));
-    centerText("192.168.4.1/config", 120, 188, 1, rgb565(114, 202, 255));
-  } else if (WiFi.status() == WL_CONNECTED) {
-    centerText(apiConfigured() ? weatherSourceLabel() : String("API setup needed"),
-               120, 170, 1, rgb565(159, 183, 201));
+    centerText("Connect to setup Wi-Fi", 120, 172, 1, rgb565(159, 183, 201));
+    centerText(setupApName(), 120, 195, 1, rgb565(114, 202, 255));
+    centerText("192.168.4.1/config", 120, 213, 1, rgb565(114, 202, 255));
   } else {
-    centerText("Connecting to Wi-Fi...", 120, 170, 1, rgb565(159, 183, 201));
+    centerText(lastApiError.length() ? "Weather API error" : "Preparing display",
+               120, 172, 1, rgb565(159, 183, 201));
+    if (WiFi.status() != WL_CONNECTED) {
+      centerText("Connecting to Wi-Fi...", 120, 195, 1, rgb565(114, 202, 255));
+    } else if (!apiConfigured()) {
+      centerText("API setup needed", 120, 195, 1, rgb565(114, 202, 255));
+    } else if (lastApiError.length()) {
+      centerText("Check provider configuration", 120, 195, 1, rgb565(114, 202, 255));
+    } else {
+      centerText("Fetching weather...", 120, 195, 1, rgb565(114, 202, 255));
+    }
   }
 
   drawFooter();

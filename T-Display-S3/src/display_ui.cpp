@@ -397,27 +397,43 @@ void drawFooter() {
   drawBoldText(stale ? "STALE" : "ONLINE", 157, 304, stateColor);
 }
 
+
 void drawWaitingScreen() {
   display.fillScreen(C_BLACK);
   drawHeader();
 
-  drawConceptCard(8, 48, 154, 95, 11, true);
+  // Waiting state owns the complete content area between header and footer.
+  drawConceptCard(8, 43, 154, 244, 11, true);
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font4);
+  display.setTextSize(1.0f);
   display.setTextColor(C_WHITE);
-  display.drawString(setupApStarted ? "SETUP" : "WAITING", 85, 84);
+  display.drawString(setupApStarted ? "SETUP" : "WAITING", 85, 148);
 
   display.setFont(&fonts::Font2);
   display.setTextColor(rgb565(159, 183, 201));
   if (setupApStarted) {
-    display.drawString("Connect to setup Wi-Fi", 85, 108);
+    display.drawString("Connect to setup Wi-Fi", 85, 177);
     display.setFont(&fonts::Font0);
+    display.setTextSize(0.85f);
     display.setTextColor(rgb565(114, 202, 255));
-    display.drawString(setupApName(), 85, 126);
-  } else if (WiFi.status() == WL_CONNECTED) {
-    display.drawString(apiConfigured() ? weatherSourceLabel() : String("API setup needed"), 85, 108);
+    display.drawString(setupApName(), 85, 199);
+    display.setTextSize(1.0f);
   } else {
-    display.drawString("Connecting to Wi-Fi", 85, 108);
+    display.drawString(lastApiError.length() ? "Weather API error" : "Preparing display", 85, 177);
+    display.setFont(&fonts::Font0);
+    display.setTextSize(0.85f);
+    display.setTextColor(rgb565(114, 202, 255));
+    if (WiFi.status() != WL_CONNECTED) {
+      display.drawString("Connecting to Wi-Fi...", 85, 199);
+    } else if (!apiConfigured()) {
+      display.drawString("API setup needed", 85, 199);
+    } else if (lastApiError.length()) {
+      display.drawString("Check provider configuration", 85, 199);
+    } else {
+      display.drawString("Fetching weather...", 85, 199);
+    }
+    display.setTextSize(1.0f);
   }
 
   drawFooter();

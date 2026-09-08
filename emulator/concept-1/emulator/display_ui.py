@@ -341,8 +341,10 @@ def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         out += [
             card(8, 43, 154, 244, 11, True),
             text(85, 148, "WAITING", 18, "middle", WHITE, "900"),
-            text(85, 177, "Weather API error" if api_error else "Fetching weather...",
+            text(85, 177, "Weather API error" if api_error else "Preparing display",
                  7.2, "middle", MUTED, "600"),
+            text(85, 199, "Check provider configuration" if api_error else "Fetching weather...",
+                 6.0, "middle", CYAN, "600"),
         ]
     else:
         apparent = int(round(apparent_outdoor_f(wx)))
@@ -434,8 +436,10 @@ def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         out += [
             card(10, 54, 220, 208, 12, True),
             text(120, 143, "WAITING", 23, "middle", WHITE, "900"),
-            text(120, 176, "Weather API error" if api_error else "Fetching weather...",
+            text(120, 176, "Weather API error" if api_error else "Preparing display",
                  8, "middle", MUTED, "600"),
+            text(120, 199, "Check provider configuration" if api_error else "Fetching weather...",
+                 7.0, "middle", CYAN, "600"),
         ]
     else:
         apparent = int(round(apparent_outdoor_f(wx)))
