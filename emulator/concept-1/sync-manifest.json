@@ -1,20 +1,46 @@
 {
-  "contract": "concept-1-7c",
+  "contract": "concept-1-7c-live",
   "productionBranch": "concept-1",
-  "display": {"width": 800, "height": 480},
+  "display": {
+    "width": 800,
+    "height": 480
+  },
   "productionSources": [
-    {"path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp", "blobSha": "2d80fadb046b282b6672fcaf305c1da491a24380"},
-    {"path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/weather_math.cpp", "blobSha": "be3f7069be4b24d9022ab8a8f804bba713b38a07"}
+    {
+      "path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp",
+      "blobSha": "2d80fadb046b282b6672fcaf305c1da491a24380"
+    },
+    {
+      "path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/weather_math.cpp",
+      "blobSha": "be3f7069be4b24d9022ab8a8f804bba713b38a07"
+    },
+    {
+      "path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/ambient_weather.cpp",
+      "blobSha": "866daf6364e6fc1f61bba0df162a1211f3ae1507"
+    },
+    {
+      "path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/wunderground_weather.cpp",
+      "blobSha": "13a2d92a0c0ab375fbfb361d7e19e79d9e5ae3d4"
+    },
+    {
+      "path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/forecast_weather.cpp",
+      "blobSha": "dacccbb00a539c5546f7b8fa9657b59b64d14fbb"
+    },
+    {
+      "path": "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/include/config.h",
+      "blobSha": "e967e457a8e6e52d6ed5f7532b305bba8e4f965d"
+    }
   ],
   "behavior": [
-    "800x480 layout and card geometry",
-    "NWS heat index with Rothfusz adjustments",
-    "NWS wind chill applicability and formula",
-    "Magnus dew point",
-    "16-point wind direction",
-    "heat and wind-chill risk labels",
-    "production heat/cold palettes",
-    "today/tomorrow forecast rotation every 30 seconds",
-    "ONLINE/STALE footer state"
+    "800x480 Concept-1 layout",
+    "NWS apparent-temperature math and palettes",
+    "Preset/Test Data and Live Weather Data modes",
+    "Ambient Weather current + REST history",
+    "Weather Underground current + recent/hourly, daily, archived history fallbacks",
+    "same-local-clock yesterday comparison with DST-aware Ambient matching",
+    "provider coordinates feed two-day Open-Meteo forecast",
+    "30-second forecast card rotation",
+    "ONLINE/STALE state",
+    "last valid history/forecast retained when secondary fetch fails"
   ]
 }

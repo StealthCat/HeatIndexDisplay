@@ -1,19 +1,29 @@
 # Concept-1 emulator
 
-Browser emulator for the production **Concept-1 Waveshare ESP32-S3-Touch-LCD-7C-BOX** display.
+Browser emulator for the production **Concept-1 Waveshare ESP32-S3-Touch-LCD-7C-BOX** firmware.
 
 ## Run
 
-Open `index.html` directly, or serve this directory with any static HTTP server. The emulated panel is exactly 800×480 pixels and controls below it let you exercise heat, cold, wind, forecast, yesterday-delta, and stale-data states.
+```bash
+cd emulator/concept-1
+python3 server.py
+```
 
-## Sync contract
+Open `http://127.0.0.1:8080`.
 
-`sync-manifest.json` pins the production `display_ui.cpp` and `weather_math.cpp` Git blob SHAs. `verify-sync.mjs` fails if those production sources drift without a corresponding emulator update, and also checks the emulator's core layout, formulas, thresholds, palettes, forecast rotation, and footer state.
+The emulator has two data modes:
 
-Run from the repository root:
+- **Preset/Test Data** — editable values and risk presets.
+- **Live Weather Data** — polls either Ambient Weather or Weather Underground through the local Python server. Provider credentials are kept in memory only and are never written to disk.
+
+Live mode mirrors the production Concept-1 data flow: current station observations, provider REST history for today's high/low and the same local clock time yesterday, Weather Underground recent/hourly → daily → archived fallback order, provider station coordinates, and a two-day Open-Meteo high/low forecast. Current observations continue updating when a secondary history/forecast request fails; the last valid secondary values remain displayed.
+
+## Sync verification
+
+`sync-manifest.json` pins the production UI, math, provider, forecast, and endpoint/config source blobs. CI runs:
 
 ```bash
 node emulator/concept-1/verify-sync.mjs
 ```
 
-When production Concept-1 UI or apparent-temperature math changes, update the emulator first, then update the pinned source SHA(s) in the manifest. CI will otherwise fail intentionally.
+The check fails if a pinned production source changes without a corresponding emulator update, or if required emulator formulas, geometry, provider fallbacks, modes, or forecast behavior disappear.

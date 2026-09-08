@@ -1,8 +1,8 @@
 "use strict";
 
-// Sync contract: concept-1-7c / production display_ui.cpp + weather_math.cpp
 const DISPLAY_CONTRACT = "concept-1-7c";
 const FORECAST_SWITCH_MS = 30000;
+const LIVE_POLL_MS = 60000;
 
 const palettes = {
   heat: [
@@ -21,36 +21,32 @@ const palettes = {
 };
 
 function dewPointF(tempF, rh) {
-  const tC=(tempF-32)*5/9;
-  const bounded=Math.max(0.1,Math.min(100,rh));
-  const a=17.625,b=243.04;
-  const gamma=Math.log(bounded/100)+(a*tC)/(b+tC);
+  if (!Number.isFinite(tempF) || !Number.isFinite(rh) || rh <= 0 || rh > 100) return NaN;
+  const tC=(tempF-32)*5/9, a=17.625, b=243.04;
+  const gamma=Math.log(rh/100)+(a*tC)/(b+tC);
   return ((b*gamma)/(a-gamma))*9/5+32;
 }
-
 function heatIndexF(tempF, rh) {
-  // NWS simple heat-index estimate followed by Rothfusz regression.
   const simple=0.5*(tempF+61.0+((tempF-68.0)*1.2)+(rh*0.094));
   const averaged=(simple+tempF)/2;
   if (averaged < 80) return averaged;
   const T=tempF,R=rh;
   let hi=-42.379+2.04901523*T+10.14333127*R-0.22475541*T*R-0.00683783*T*T-0.05481717*R*R+0.00122874*T*T*R+0.00085282*T*R*R-0.00000199*T*T*R*R;
-  if (R<13 && T>=80 && T<=112) hi-=((13-R)/4)*Math.sqrt((17-Math.abs(T-95))/17);
-  else if (R>85 && T>=80 && T<=87) hi+=((R-85)/10)*((87-T)/5);
+  if (R<13 && T>=80 && T<=112) {
+    const inside=(17-Math.abs(T-95))/17;
+    if (inside>0) hi-=((13-R)/4)*Math.sqrt(inside);
+  } else if (R>85 && T>=80 && T<=87) hi+=((R-85)/10)*((87-T)/5);
   return hi;
 }
-
 function windChillF(tempF, windMph) {
-  if (!(tempF<=50 && windMph>3)) return null;
+  if (!Number.isFinite(tempF) || !Number.isFinite(windMph) || tempF>50 || windMph<=3) return null;
   const v16=Math.pow(windMph,0.16);
   return 35.74+0.6215*tempF-35.75*v16+0.4275*tempF*v16;
 }
-
 function apparentTemperature(tempF,rh,windMph){
   const wc=windChillF(tempF,windMph);
   return {value:wc===null?heatIndexF(tempF,rh):wc, mode:wc===null?"heat":"cold"};
 }
-
 function riskLabel(value,mode){
   if(mode==="cold"){
     if(value<=-35)return "EXTREME DANGER";
@@ -65,29 +61,26 @@ function riskLabel(value,mode){
   if(value>=80)return "CAUTION";
   return "NORMAL";
 }
-
 function direction16(deg){
+  if(!Number.isFinite(deg)) return "--";
   const names=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
   const n=((deg%360)+360)%360;
   return names[Math.floor((n+11.25)/22.5)%16];
 }
-
-function paletteFor(value,mode){
-  if(mode==="cold") return palettes.cold.find(p=>value<=p.max);
-  return palettes.heat.find(p=>value>=p.min);
-}
-
+function paletteFor(value,mode){return mode==="cold"?palettes.cold.find(p=>value<=p.max):palettes.heat.find(p=>value>=p.min);}
 function fmt(n,digits=0){return Number.isFinite(n)?n.toFixed(digits):"--";}
-function number(id){return Number(document.getElementById(id).value);}
+function number(id){const v=Number(document.getElementById(id).value);return Number.isFinite(v)?v:NaN;}
 function setRgb(name,v){document.getElementById("display").style.setProperty(name,v.join(","));}
+function setInput(id,value){if(value!==null && value!==undefined && Number.isFinite(Number(value)))document.getElementById(id).value=Number(value);}
+function liveMode(){return document.getElementById("dataMode").value==="live";}
 
 let forecastTomorrow=false;
 let lastUpdated=new Date();
+let liveTimer=null;
 
 function render(){
   const temp=number("inputTemp"),rh=number("inputHumidity"),wind=number("inputWind"),gust=number("inputGust"),maxGust=number("inputMaxGust"),dir=number("inputDirection"),yday=number("inputYday");
-  const apparent=apparentTemperature(temp,rh,wind);
-  const p=paletteFor(apparent.value,apparent.mode);
+  const apparent=apparentTemperature(temp,rh,wind), p=paletteFor(apparent.value,apparent.mode);
   setRgb("--top",p.top);setRgb("--bottom",p.bottom);setRgb("--border",p.border);setRgb("--status",p.status);setRgb("--accent",p.accent);
   document.getElementById("stationName").textContent=(document.getElementById("inputStation").value.trim()||"Weather Station").slice(0,20);
   document.getElementById("dateText").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}).toUpperCase();
@@ -99,8 +92,8 @@ function render(){
   document.getElementById("tempValue").textContent=`${fmt(temp,1)}°F`;
   document.getElementById("humidityValue").textContent=`${fmt(rh)}%`;
   document.getElementById("dewValue").textContent=`${fmt(dewPointF(temp,rh),1)}°F`;
-  document.getElementById("ydayValue").textContent=`${yday>=0?"+":""}${fmt(yday,1)}°F`;
-  document.getElementById("ydayDetail").textContent=yday===0?"NO CHANGE":yday>0?"WARMER":"COOLER";
+  document.getElementById("ydayValue").textContent=`${Number.isFinite(yday)&&yday>=0?"+":""}${fmt(yday,1)}°F`;
+  document.getElementById("ydayDetail").textContent=!Number.isFinite(yday)?"":yday===0?"NO CHANGE":yday>0?"WARMER":"COOLER";
   document.getElementById("windValue").textContent=fmt(wind,1);
   document.getElementById("gustValue").textContent=`GUST ${fmt(gust,1)}`;
   document.getElementById("maxGustValue").textContent=`MAX ${fmt(maxGust,1)}`;
@@ -108,8 +101,7 @@ function render(){
   document.getElementById("directionValue").textContent=direction16(dir);
   const high=number(forecastTomorrow?"inputTomorrowHigh":"inputTodayHigh"),low=number(forecastTomorrow?"inputTomorrowLow":"inputTodayLow");
   document.getElementById("forecastLabel").textContent=forecastTomorrow?"TOMORROW":"TODAY";
-  document.getElementById("forecastValue").textContent=`H ${fmt(high)}° / L ${fmt(low)}°`;
-  document.getElementById("forecastDetail").textContent=forecastTomorrow?"NEXT DAY FORECAST":"CURRENT DAY FORECAST";
+  document.getElementById("forecastValue").textContent=`${fmt(high)}° / ${fmt(low)}°`;
   const stale=document.getElementById("inputStale").checked;
   const status=document.getElementById("statusText"); status.textContent=stale?"STALE":"ONLINE";status.classList.toggle("stale",stale);
   document.getElementById("updatedText").textContent=`Updated ${lastUpdated.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}`;
@@ -123,10 +115,64 @@ const presets={
   cold:{inputTemp:10,inputHumidity:50,inputWind:22,inputGust:31,inputMaxGust:39,inputDirection:315}
 };
 
-document.querySelectorAll("input").forEach(el=>el.addEventListener("input",()=>{lastUpdated=new Date();render();}));
-document.querySelectorAll("[data-preset]").forEach(btn=>btn.addEventListener("click",()=>{Object.entries(presets[btn.dataset.preset]).forEach(([id,val])=>document.getElementById(id).value=val);lastUpdated=new Date();render();}));
-setInterval(()=>{forecastTomorrow=!forecastTomorrow;render();},FORECAST_SWITCH_MS);
-render();
+function updateModeUi(){
+  const live=liveMode();
+  document.querySelectorAll("[data-preset]").forEach(b=>b.disabled=live);
+  document.querySelectorAll(".manual-data input").forEach(el=>el.disabled=live);
+  document.getElementById("liveConfig").hidden=!live;
+  if(live){saveLiveConfig().catch(showLiveError);startLivePolling();}
+  else{stopLivePolling();document.getElementById("inputStale").checked=false;document.getElementById("liveStatus").textContent="Preset/Test Data";render();}
+}
+function updateProviderUi(){
+  const provider=document.getElementById("provider").value;
+  document.getElementById("ambientFields").hidden=provider!=="ambient";
+  document.getElementById("wuFields").hidden=provider!=="wunderground";
+}
+function liveConfigPayload(){
+  return {
+    provider:document.getElementById("provider").value,
+    timezone:document.getElementById("liveTimezone").value.trim()||"America/New_York",
+    ambient:{apiKey:document.getElementById("ambientApiKey").value.trim(),applicationKey:document.getElementById("ambientApplicationKey").value.trim(),macAddress:document.getElementById("ambientMac").value.trim()},
+    wunderground:{apiKey:document.getElementById("wuApiKey").value.trim(),stationId:document.getElementById("wuStationId").value.trim()}
+  };
+}
+async function saveLiveConfig(){
+  if(!liveMode())return;
+  const r=await fetch("/api/config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(liveConfigPayload())});
+  const j=await r.json(); if(!r.ok)throw new Error(j.error||`HTTP ${r.status}`);
+  await pollLive();
+}
+function applyLive(data){
+  setInput("inputTemp",data.tempF);setInput("inputHumidity",data.humidity);setInput("inputWind",data.windMph);setInput("inputGust",data.gustMph);
+  setInput("inputMaxGust",data.maxDailyGustMph);setInput("inputDirection",data.windDirDeg);setInput("inputYday",data.fromYesterdayF);
+  setInput("inputTodayHigh",data.forecastTodayHighF);setInput("inputTodayLow",data.forecastTodayLowF);
+  setInput("inputTomorrowHigh",data.forecastTomorrowHighF);setInput("inputTomorrowLow",data.forecastTomorrowLowF);
+  if(data.station)document.getElementById("inputStation").value=data.station;
+  lastUpdated=data.observationTime?new Date(data.observationTime):new Date();
+  document.getElementById("inputStale").checked=Boolean(data.stale);
+  document.getElementById("liveStatus").textContent=`Live: ${data.providerLabel}${data.summaryWarning?` • history warning: ${data.summaryWarning}`:""}${data.forecastWarning?` • forecast warning: ${data.forecastWarning}`:""}`;
+  render();
+}
+async function pollLive(){
+  if(!liveMode())return;
+  const r=await fetch("/api/live",{cache:"no-store"});const j=await r.json();
+  if(!r.ok)throw new Error(j.error||`HTTP ${r.status}`);
+  applyLive(j);
+}
+function showLiveError(err){
+  document.getElementById("inputStale").checked=true;
+  document.getElementById("liveStatus").textContent=`Live error: ${err.message||err}`;
+  render();
+}
+function startLivePolling(){stopLivePolling();pollLive().catch(showLiveError);liveTimer=setInterval(()=>pollLive().catch(showLiveError),LIVE_POLL_MS);}
+function stopLivePolling(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
 
-// Expose pure functions for the sync verifier / browser console.
+document.querySelectorAll(".manual-data input").forEach(el=>el.addEventListener("input",()=>{if(!liveMode()){lastUpdated=new Date();render();}}));
+document.querySelectorAll("[data-preset]").forEach(btn=>btn.addEventListener("click",()=>{if(liveMode())return;Object.entries(presets[btn.dataset.preset]).forEach(([id,val])=>document.getElementById(id).value=val);lastUpdated=new Date();render();}));
+document.getElementById("dataMode").addEventListener("change",updateModeUi);
+document.getElementById("provider").addEventListener("change",updateProviderUi);
+document.getElementById("saveLive").addEventListener("click",()=>saveLiveConfig().catch(showLiveError));
+setInterval(()=>{forecastTomorrow=!forecastTomorrow;render();},FORECAST_SWITCH_MS);
+updateProviderUi();render();
+
 window.Concept1Emulator={DISPLAY_CONTRACT,dewPointF,heatIndexF,windChillF,apparentTemperature,riskLabel,direction16,paletteFor};
