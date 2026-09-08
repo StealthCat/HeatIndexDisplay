@@ -1,0 +1,71 @@
+name: Fix waiting card layout
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-waiting-card.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Expand waiting cards to full content area
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+
+          path = Path('emulator/concept-1/emulator/display_ui.py')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  '''            card(8, 48, 154, 95, 11, True),\n            text(85, 84, "WAITING", 18, "middle", WHITE, "900"),\n            text(85, 108, "Weather API error" if api_error else "Fetching weather...",\n                 7.2, "middle", MUTED, "600"),''',
+                  '''            card(8, 43, 154, 244, 11, True),\n            text(85, 148, "WAITING", 18, "middle", WHITE, "900"),\n            text(85, 177, "Weather API error" if api_error else "Fetching weather...",\n                 7.2, "middle", MUTED, "600"),'''
+              ),
+              (
+                  '''            card(10, 54, 128, 151, 12, True),\n            text(74, 112, "WAITING", 23, "middle", WHITE, "900"),\n            text(74, 146, "Weather API error" if api_error else "Fetching weather...",\n                 8, "middle", MUTED, "600"),''',
+                  '''            card(10, 54, 220, 208, 12, True),\n            text(120, 143, "WAITING", 23, "middle", WHITE, "900"),\n            text(120, 176, "Weather API error" if api_error else "Fetching weather...",\n                 8, "middle", MUTED, "600"),'''
+              ),
+              (
+                  '''            card(33, 82, 734, 250, 18, True),\n            text(400, 155, "WAITING", 52, "middle", WHITE, "900"),\n            text(400, 220, "Weather API error" if api_error else "Preparing display",\n                 24, "middle", MUTED, "600"),\n            text(400, 270, "Fetching weather..." if not api_error else "Check provider configuration",\n                 18, "middle", "#72caff", "600"),''',
+                  '''            card(33, 82, 734, 310, 18, True),\n            text(400, 188, "WAITING", 52, "middle", WHITE, "900"),\n            text(400, 245, "Weather API error" if api_error else "Preparing display",\n                 24, "middle", MUTED, "600"),\n            text(400, 289, "Fetching weather..." if not api_error else "Check provider configuration",\n                 18, "middle", "#72caff", "600"),'''
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit('Expected waiting-card layout block was not found; aborting without changes')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+
+          manifest_path = Path('.github/concept1-emulator-v7.11.10-manifest.json')
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['files']['emulator/display_ui.py'] = hashlib.sha256(path.read_bytes()).hexdigest()
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Run emulator tests
+        working-directory: emulator/concept-1
+        run: python -m pytest -q
+
+      - name: Commit fix and remove one-time workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/fix-waiting-card.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add emulator/concept-1/emulator/display_ui.py .github/concept1-emulator-v7.11.10-manifest.json .github/workflows/fix-waiting-card.yml
+          git commit -m "Expand waiting state across display content area"
+          git push origin HEAD:main
