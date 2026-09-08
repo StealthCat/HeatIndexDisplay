@@ -36,6 +36,7 @@ jobs:
           grep -q 'Waveshare 7C BOX · 800×480' emulator/concept-1/emulator/web_ui.py
           test -f emulator/concept-1/preview_waveshare_7c_box.svg
           test -f emulator/concept-1/tests/test_waveshare_7c_box.py
+          rm -f emulator/concept-1/emulator_config.json
           python3 - <<'PY'
           import hashlib, json
           from pathlib import Path
