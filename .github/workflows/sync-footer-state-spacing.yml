@@ -1,0 +1,273 @@
+name: Sync footer state spacing
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-footer-state-spacing.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Synchronize footer state spacing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import re
+
+          root = Path('.')
+
+          replacements = {
+              Path('T-Display-S3/src/display_ui.cpp'): r'''void drawFooter() {
+            const uint16_t muted = rgb565(168, 198, 216);
+            const uint16_t green = rgb565(117, 237, 79);
+            const uint16_t red = rgb565(255, 122, 103);
+
+            display.fillRect(0, 289, 170, 31, C_BLACK);
+            drawConceptCard(7, 292, 156, 23, 7, true);
+
+            display.setTextSize(1.0f);
+            display.setFont(&fonts::Font0);
+
+            if (WiFi.status() != WL_CONNECTED) {
+              display.setTextDatum(textdatum_t::middle_center);
+              display.setTextColor(C_WHITE);
+              display.drawString(setupApStarted ? "Setup 192.168.4.1" : "Wi-Fi disconnected", 85, 304);
+              return;
+            }
+            if (!apiConfigured()) {
+              display.setTextDatum(textdatum_t::middle_center);
+              display.setTextColor(C_WHITE);
+              display.drawString("Open /config", 85, 304);
+              return;
+            }
+
+            const bool offline = !wx.valid;
+            const bool stale = !offline && dataStale();
+            const uint16_t stateColor = offline ? red : (stale ? red : green);
+
+            drawClockIcon(18, 304, muted);
+
+            String left;
+            String state;
+            uint16_t leftColor = C_WHITE;
+            if (offline) {
+              left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
+              state = "OFFLINE";
+              leftColor = lastApiError.length() ? red : C_WHITE;
+            } else {
+              left = "Updated ";
+              left += updateClockText();
+              state = stale ? "STALE" : "ONLINE";
+              leftColor = stale ? red : C_WHITE;
+            }
+
+            // LILYGO is the visual reference: 4 px from dot edge to label.
+            display.setTextDatum(textdatum_t::middle_left);
+            display.setTextSize(0.62f);
+            display.setTextColor(leftColor);
+            display.drawString(left, 31, 304);
+
+            display.drawFastVLine(119, 297, 13, rgb565(85, 115, 133));
+            display.fillCircle(130, 304, 2, stateColor);
+            drawBoldText(state, 136, 304, stateColor);
+            display.setTextSize(1.0f);
+          }''',
+              Path('Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp'): r'''void drawFooter() {
+            const uint16_t muted = rgb565(168, 198, 216);
+            const uint16_t green = rgb565(117, 237, 79);
+            const uint16_t red = rgb565(255, 122, 103);
+
+            gfx->fillRect(0, 267, 240, 53, C_BLACK);
+            drawConceptCard(10, 272, 220, 36, 9, true);
+
+            if (WiFi.status() != WL_CONNECTED) {
+              centerBoldText(setupApStarted ? "Setup: 192.168.4.1/config" : "Wi-Fi disconnected",
+                             120, 285, 1, C_WHITE);
+              return;
+            }
+            if (!apiConfigured()) {
+              centerBoldText("Open /config", 120, 285, 1, C_WHITE);
+              return;
+            }
+
+            const bool offline = !wx.valid;
+            const bool stale = !offline && dataStale();
+            const uint16_t stateColor = offline ? red : (stale ? red : green);
+            drawClockIcon(24, 290, muted);
+
+            String left;
+            String state;
+            uint16_t leftColor = C_WHITE;
+            int leftX = 45;
+            if (offline) {
+              left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
+              state = "OFFLINE";
+              leftColor = lastApiError.length() ? red : C_WHITE;
+              leftX = 35;
+            } else {
+              left = "Updated ";
+              left += updateClockText();
+              state = stale ? "STALE" : "ONLINE";
+              leftColor = stale ? red : C_WHITE;
+            }
+            printBoldAt(leftX, 286, left, leftColor, 1);
+
+            // Preserve the LILYGO visual contract: 4 px from dot edge to label.
+            gfx->drawFastVLine(151, 280, 20, rgb565(85, 115, 133));
+            gfx->fillCircle(172, 290, 3, stateColor);
+            printBoldAt(179, 286, state, stateColor, 1);
+          }''',
+              Path('Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp'): r'''void drawFooter() {
+            const uint16_t muted = rgb565(168, 198, 216), green = rgb565(117, 237, 79), red = rgb565(255, 122, 103);
+            gfx->fillRect(0, 400, LCD_WIDTH, 80, C_BLACK);
+            drawConceptCard(33, 410, 734, 52, 14, true);
+            if (WiFi.status() != WL_CONNECTED) {
+              centerBoldText(setupApStarted ? "Setup: 192.168.4.1/config" : "Wi-Fi disconnected", 400, 427, 2, C_WHITE); return;
+            }
+            if (!apiConfigured()) { centerBoldText("Open /config", 400, 427, 2, C_WHITE); return; }
+
+            const bool offline = !wx.valid;
+            const bool stale = !offline && dataStale();
+            const uint16_t stateColor = offline ? red : (stale ? red : green);
+            drawClockIcon(67, 436, muted);
+
+            String left;
+            String state;
+            uint16_t leftColor = C_WHITE;
+            if (offline) {
+              left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
+              state = "OFFLINE";
+              leftColor = lastApiError.length() ? red : C_WHITE;
+            } else {
+              left = "Updated "; left += updateClockText();
+              state = stale ? "STALE" : "ONLINE";
+              leftColor = stale ? red : C_WHITE;
+            }
+            printBoldAt(94, 427, left, leftColor, 2);
+            gfx->drawFastVLine(570, 419, 34, rgb565(85, 115, 133));
+
+            // 8 px at 800x480 gives the same apparent gap as LILYGO's 4 px.
+            gfx->fillCircle(649, 436, 5, stateColor);
+            printBoldAt(662, 427, state, stateColor, 2);
+          }''',
+          }
+
+          for path, new_func in replacements.items():
+              text = path.read_text(encoding='utf-8')
+              pattern = r'void drawFooter\(\) \{.*?\n\}\n\n+void drawWaitingScreen\(\) \{'
+              updated, count = re.subn(pattern, new_func + '\n\n\nvoid drawWaitingScreen() {', text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'Unable to replace drawFooter in {path}; found {count} matches')
+              path.write_text(updated, encoding='utf-8')
+
+          emu_path = Path('emulator/concept-1/emulator/display_ui.py')
+          emu = emu_path.read_text(encoding='utf-8')
+          changes = [
+              ('text(157, 304, right, 5.5, "end", rc, "900")',
+               'text(136, 304, right, 5.5, "start", rc, "900")'),
+              ('f\'<circle cx="190" cy="290" r="3" fill="{rc}"/>\'',
+               'f\'<circle cx="187" cy="290" r="3" fill="{rc}"/>\''),
+              ('text(221, 290, right, 7.2, "end", rc, "900")',
+               'text(194, 290, right, 7.2, "start", rc, "900")'),
+              ('f\'<circle cx="620" cy="436" r="5" fill="{rc}"/>\'',
+               'f\'<circle cx="664" cy="436" r="5" fill="{rc}"/>\''),
+              ('text(746, 436, right, 15, "end", rc, "900", 1.0)',
+               'text(677, 436, right, 15, "start", rc, "900", 1.0)'),
+          ]
+          for old, new in changes:
+              if old not in emu:
+                  raise SystemExit(f'Expected emulator footer fragment not found: {old}')
+              emu = emu.replace(old, new, 1)
+          emu_path.write_text(emu, encoding='utf-8')
+
+          test_path = Path('emulator/concept-1/tests/test_firmware_visual_parity.py')
+          tests = test_path.read_text(encoding='utf-8')
+          marker = '    def test_firmware_sources_contain_current_pill_contract(self):\n'
+          method = '''    def test_footer_state_badge_spacing_matches_lilygo_reference(self):\n        self.app.wx.valid = False\n        renders = [\n            tdisplay_svg(self.app.config, self.app.wx),\n            waveshare_svg(self.app.config, self.app.wx),\n            waveshare_7c_svg(self.app.config, self.app.wx),\n        ]\n        expected = [\n            ('cx="130" cy="304" r="2.4"', 'x="136" y="304"', '>OFFLINE</text>'),\n            ('cx="187" cy="290" r="3"', 'x="194" y="290"', '>OFFLINE</text>'),\n            ('cx="664" cy="436" r="5"', 'x="677" y="436"', '>OFFLINE</text>'),\n        ]\n        for svg, parts in zip(renders, expected):\n            for part in parts:\n                self.assertIn(part, svg)\n\n        sources = [\n            (ROOT / "T-Display-S3/src/display_ui.cpp", 'fillCircle(130, 304, 2', 'drawBoldText(state, 136, 304'),\n            (ROOT / "Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp", 'fillCircle(172, 290, 3', 'printBoldAt(179, 286, state'),\n            (ROOT / "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp", 'fillCircle(649, 436, 5', 'printBoldAt(662, 427, state'),\n        ]\n        for path, dot, label in sources:\n            src = path.read_text()\n            self.assertIn(dot, src)\n            self.assertIn(label, src)\n\n'''
+          if method.strip() not in tests:
+              if marker not in tests:
+                  raise SystemExit('Unable to locate parity test insertion point')
+              tests = tests.replace(marker, method + marker, 1)
+              test_path.write_text(tests, encoding='utf-8')
+
+          manifest_path = Path('.github/concept1-emulator-v7.11.10-manifest.json')
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['files']['emulator/display_ui.py'] = hashlib.sha256(emu_path.read_bytes()).hexdigest()
+          manifest['files']['tests/test_firmware_visual_parity.py'] = hashlib.sha256(test_path.read_bytes()).hexdigest()
+          for rel in [
+              'T-Display-S3/src/display_ui.cpp',
+              'Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp',
+              'Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp',
+          ]:
+              manifest['firmware_sources'][rel] = hashlib.sha256(Path(rel).read_bytes()).hexdigest()
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install verification dependencies
+        run: python -m pip install pytest platformio
+
+      - name: Verify emulator manifest
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root = Path('.')
+          manifest = json.loads((root / '.github/concept1-emulator-v7.11.10-manifest.json').read_text())
+          for rel, expected in manifest['files'].items():
+              actual = hashlib.sha256((root / 'emulator/concept-1' / rel).read_bytes()).hexdigest()
+              if actual != expected:
+                  raise SystemExit(f'emulator manifest mismatch: {rel}: {actual} != {expected}')
+          for rel, expected in manifest['firmware_sources'].items():
+              actual = hashlib.sha256((root / rel).read_bytes()).hexdigest()
+              if actual != expected:
+                  raise SystemExit(f'firmware manifest mismatch: {rel}: {actual} != {expected}')
+          print('Manifest parity verified')
+          PY
+
+      - name: Run emulator parity tests
+        working-directory: emulator/concept-1
+        run: python -m pytest -q
+
+      - name: Build T-Display-S3
+        working-directory: T-Display-S3
+        run: platformio run
+
+      - name: Build Waveshare 2.8
+        working-directory: Waveshare-ESP32-S3-Touch-LCD-2.8
+        run: platformio run
+
+      - name: Build Waveshare 7C BOX
+        working-directory: Waveshare-ESP32-S3-Touch-LCD-7C-BOX
+        run: platformio run
+
+      - name: Commit synchronized changes
+        shell: bash
+        run: |
+          rm -f .github/workflows/sync-footer-state-spacing.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add T-Display-S3/src/display_ui.cpp \
+                  Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp \
+                  Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp \
+                  emulator/concept-1/emulator/display_ui.py \
+                  emulator/concept-1/tests/test_firmware_visual_parity.py \
+                  .github/concept1-emulator-v7.11.10-manifest.json \
+                  .github/workflows/sync-footer-state-spacing.yml
+          git commit -m "Normalize footer status spacing across displays"
+          git push origin HEAD:main
