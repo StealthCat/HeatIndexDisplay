@@ -4,12 +4,14 @@ on:
   push:
     branches: [concept-1]
     paths:
+      - 'README.md'
       - 'emulator/concept-1/**'
       - '.github/concept1-emulator-v7.11.9-manifest.json'
       - '.github/workflows/concept-1-emulator-sync.yml'
   pull_request:
     branches: [concept-1]
     paths:
+      - 'README.md'
       - 'emulator/concept-1/**'
       - '.github/concept1-emulator-v7.11.9-manifest.json'
 
@@ -20,7 +22,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify repository matches downloadable ZIP
+      - name: Enforce single Markdown documentation file
+        shell: bash
+        run: |
+          mapfile -t docs < <(find . -type f -name '*.md' -not -path './README.md' -not -path './.git/*' | sort)
+          if ((${#docs[@]})); then
+            printf 'Unexpected Markdown files:\n%s\n' "${docs[*]}"
+            exit 1
+          fi
+
+      - name: Verify functional emulator files against downloadable ZIP
         shell: bash
         run: |
           python3 - <<'PY'
@@ -43,7 +54,7 @@ jobs:
               raise SystemExit(1)
           if len(actual) != manifest['file_count']:
               raise SystemExit(f"file count mismatch: {len(actual)} != {manifest['file_count']}")
-          print(f"ZIP parity OK: {len(actual)} files match {manifest['archive']}")
+          print(f"Functional emulator parity OK: {len(actual)} files from {manifest['archive']}")
           PY
 
       - name: Run full emulator tests
