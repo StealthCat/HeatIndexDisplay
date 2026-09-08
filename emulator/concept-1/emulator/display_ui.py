@@ -90,7 +90,7 @@ def text(x, y, value, size=8, anchor="start", color=WHITE, weight="400",
     )
 
 def card(x, y, w, h, r=7, highlight=False):
-    fill = "url(#cardHi)" if highlight else "url(#card)"
+    fill = "#071d2c" if highlight else "#041622"
     return (
         f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" '
         f'fill="{fill}" stroke="#174e6c" stroke-width="1"/>'
@@ -149,7 +149,7 @@ def icon(kind, x, y, scale=1.0):
         )
     elif kind == "sun":
         body = (
-            '<g filter="url(#sunGlow)">'
+            '<g>'
             '<circle cx="10" cy="10" r="5.4" fill="#ffbf2c" stroke="#ffda60" stroke-width=".8"/>'
             '<g stroke="#ffc33b" stroke-width="2"><path d="M10 0v3M10 17v3M0 10h3M17 10h3'
             'M3 3l2 2M15 15l2 2M3 17l2-2M15 5l2-2"/></g></g>'
@@ -159,12 +159,6 @@ def icon(kind, x, y, scale=1.0):
             '<circle cx="10" cy="10" r="7.5" fill="none" stroke="#a8c6d8" stroke-width="1.5"/>'
             '<path d="M10 5v5l4 2" fill="none" stroke="#d8ebf5" stroke-width="1.5" '
             'stroke-linecap="round"/>'
-        )
-    elif kind == "alert":
-        body = (
-            '<path d="M10 2L18 17H2z" fill="#ff765e"/>'
-            '<rect x="9.2" y="7" width="1.6" height="5" rx=".8" fill="#3b120c"/>'
-            '<circle cx="10" cy="14.3" r="1" fill="#3b120c"/>'
         )
     else:
         body = ""
@@ -236,52 +230,87 @@ def _hero_palette(wx: WeatherData):
 def _hero_gradient_defs(style):
     return (
         '<defs>'
-        '<linearGradient id="heroCurrent" x1="0" y1="0" x2="1" y2="1">'
+        '<linearGradient id="heroCurrent" x1="0" y1="0" x2="0" y2="1">'
         f'<stop offset="0" stop-color="{style["top"]}"/>'
-        f'<stop offset="1" stop-color="{style["bottom"]}"/>'
-        '</linearGradient>'
-        '<linearGradient id="riskCurrent" x1="0" y1="0" x2="1" y2="0">'
-        f'<stop offset="0" stop-color="{style["status"]}"/>'
         f'<stop offset="1" stop-color="{style["bottom"]}"/>'
         '</linearGradient>'
         '</defs>'
     )
 
-def _apparent_parts(value, layout):
-    """Render number, degree symbol and F as independently positioned text.
 
-    The approved Concept 1 layout deliberately places the sun/wind icon at the
-    upper-left of the hero panel and the apparent temperature lower/right.
-    Explicit coordinates prevent the 3-digit value from colliding with the
-    condition icon or pushing °F outside the panel.
-    """
-    value_s = str(value)
-
+def _hero_icon(layout, cold):
     if layout == "tdisplay":
-        # Hero panel: x=8..162. Keep the full 100°F group in bounds.
-        if len(value_s) >= 3:
-            number_x, number_size = 94, 35
-        else:
-            number_x, number_size = 98, 38
-        baseline = 98
-        degree_x, degree_y, degree_size = 125, 84, 8
-        f_x, f_y, f_size = 132, 98, 14
+        if cold:
+            x, y = 18, 82
+            return (
+                f'<path d="M{x} {y}H{x+30} M{x+24} {y-4}L{x+30} {y}L{x+24} {y+4} '
+                f'M{x-3} {y+9}H{x+25} M{x+19} {y+5}L{x+25} {y+9}L{x+19} {y+13} '
+                f'M{x+3} {y+18}H{x+29}" fill="none" stroke="#52beff" stroke-width="1"/>'
+            )
+        cx, cy, r = 32, 88, 10
+        rays = [(12,88,17,88),(47,88,52,88),(32,68,32,73),(32,103,32,108),
+                (19,75,23,79),(41,97,45,101),(19,101,23,97),(41,79,45,75)]
+    elif layout == "waveshare":
+        if cold:
+            x, y = 20, 88
+            return (
+                f'<path d="M{x} {y}H{x+36} M{x+29} {y-5}L{x+36} {y}L{x+29} {y+5} '
+                f'M{x-2} {y+11}H{x+30} M{x+23} {y+6}L{x+30} {y+11}L{x+23} {y+16} '
+                f'M{x+4} {y+22}H{x+35}" fill="none" stroke="#52beff" stroke-width="1"/>'
+            )
+        cx, cy, r = 36, 96, 13
+        rays = [(14,96,21,96),(52,96,59,96),(36,74,36,81),(36,112,36,119),
+                (19,79,24,84),(48,108,53,113),(19,113,24,108),(48,84,53,79)]
     else:
-        # Hero panel: x=10..138. 3-digit values sit below the sun rather than
-        # across it, while 2-digit values can use a little more size.
-        if len(value_s) >= 3:
-            number_x, number_size = 82, 42
-        else:
-            number_x, number_size = 88, 47
-        baseline = 145
-        degree_x, degree_y, degree_size = 117, 129, 9
-        f_x, f_y, f_size = 123, 145, 16
+        if cold:
+            x, y = 66, 143
+            return (
+                f'<path d="M{x} {y}H{x+78} M{x+63} {y-10}L{x+78} {y}L{x+63} {y+10} '
+                f'M{x-5} {y+25}H{x+65} M{x+50} {y+15}L{x+65} {y+25}L{x+50} {y+35} '
+                f'M{x+10} {y+50}H{x+76}" fill="none" stroke="#52beff" stroke-width="1.5"/>'
+            )
+        cx, cy, r = 110, 160, 28
+        rays = [(60,160,74,160),(147,160,161,160),(110,110,110,124),(110,197,110,211),
+                (71,121,83,133),(137,187,149,199),(71,199,83,187),(137,133,149,121)]
+    lines = ''.join(
+        f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#ffc12b" stroke-width="1.5"/>'
+        for x1, y1, x2, y2 in rays
+    )
+    return f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#ffc12b" stroke="#ffdc60" stroke-width="1"/>{lines}'
 
+
+def _clock_icon(cx, cy, r):
+    return (
+        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="#a8c6d8" stroke-width="1.5"/>'
+        f'<line x1="{cx}" y1="{cy-r+3}" x2="{cx}" y2="{cy}" stroke="#a8c6d8" stroke-width="1.5"/>'
+        f'<line x1="{cx}" y1="{cy}" x2="{cx + max(3, r//2)}" y2="{cy + max(2, r//3)}" stroke="#a8c6d8" stroke-width="1.5"/>'
+    )
+
+
+def _apparent_parts(value, layout):
+    value_s = str(value)
+    if layout == "tdisplay":
+        if len(value_s) >= 3:
+            number_x, degree_x, f_x = 98, 133, 145
+        else:
+            number_x, degree_x, f_x = 102, 132, 144
+        return "".join([
+            text(number_x, 98, value_s, 35, "middle", WHITE, "900"),
+            f'<circle cx="{degree_x}" cy="83" r="3" fill="none" stroke="{WHITE}" stroke-width="1"/>',
+            text(f_x, 101, "F", 14, "middle", WHITE, "800"),
+        ])
+    if len(value_s) >= 3:
+        return "".join([
+            text(55, 138, value_s, 32, "start", WHITE, "900"),
+            f'<circle cx="119" cy="123" r="3" fill="none" stroke="{WHITE}" stroke-width="1"/>',
+            text(125, 142, "F", 16, "start", WHITE, "800"),
+        ])
     return "".join([
-        text(number_x, baseline, value_s, number_size, "middle", WHITE, "900"),
-        text(degree_x, degree_y, "°", degree_size, "start", WHITE, "900"),
-        text(f_x, f_y, "F", f_size, "start", WHITE, "800"),
+        text(57, 136, value_s, 40, "start", WHITE, "900"),
+        f'<circle cx="118" cy="119" r="3" fill="none" stroke="{WHITE}" stroke-width="1"/>',
+        text(124, 140, "F", 16, "start", WHITE, "800"),
     ])
+
 
 def _metric(out, x, y, w, h, kind, label, value, icon_scale=.62, label_size=4.8, value_size=8.0):
     out.append(card(x, y, w, h, 6))
@@ -293,15 +322,20 @@ def _metric(out, x, y, w, h, kind, label, value, icon_scale=.62, label_size=4.8,
 def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
                  forecast_elapsed_seconds: float | None = None) -> str:
     w, h = 170, 320
-    station = (cfg.station_name or "Weather Station")[:18]
+    station = cfg.station_name or "Weather Station"
+    if len(station) > 14:
+        station = station[:14]
+    station_size = 14 if len(station) <= 7 else 9
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">',
         _defs(),
-        '<rect width="170" height="320" fill="url(#bg)"/>',
-        text(8, 18, station, 14, "start", WHITE, "900"),
+        '<rect width="170" height="320" fill="#000000"/>',
+        text(8, 18, station, station_size, "start", WHITE, "900"),
         '<line x1="8" y1="33" x2="20" y2="33" stroke="#7ec8e8" stroke-width=".7"/>',
         text(27, 33, "CURRENT CONDITIONS", 4.6, "start", "#9fbed1", "600", 1.25),
     ]
+    date_s = datetime.now().strftime("%a, %b %d, %Y").replace(" 0", " ")
+    out.append(text(162, 18, date_s, 4.6, "end", "#dbe7ee", "500"))
 
     if not wx.valid:
         out += [
@@ -318,13 +352,12 @@ def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         out += [
             f'<rect x="8" y="43" width="154" height="101" rx="11" fill="url(#heroCurrent)" '
             f'stroke="{risk["border"]}" stroke-width="1"/>',
-            icon(risk["icon"], 17, 70, 1.72),
+            _hero_icon("tdisplay", wind_chill_applies(wx)),
             text(118, 59, apparent_title(wx), 9.0, "middle", WHITE, "800", .5),
             _apparent_parts(apparent, "tdisplay"),
-            f'<rect x="16" y="116" width="138" height="20" rx="10" fill="url(#riskCurrent)" '
+            f'<rect x="16" y="116" width="138" height="20" rx="10" fill="{risk["status"]}" '
             f'stroke="{risk["accent"]}" stroke-width="1"/>',
-            icon("alert", 30, 119, .55),
-            text(90, 126, apparent_risk_label(wx), 6.8, "middle", risk["accent"], "900"),
+            text(85, 126, apparent_risk_label(wx), 6.8, "middle", risk["accent"], "900"),
         ]
 
         _metric(out, 7, 149, 77, 31, "temp", "TEMPERATURE",
@@ -370,7 +403,7 @@ def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         lc = "#ff7a67" if stale else WHITE
         rc = "#ff7a67" if stale else GREEN
     out += [
-        icon("clock", 12, 294, .65),
+        _clock_icon(18, 304, 6),
         text(34, 304, left, 5.6, "start", lc, "650"),
         '<line x1="119" y1="297" x2="119" y2="310" stroke="#557385" stroke-width=".7"/>',
         f'<circle cx="130" cy="304" r="2.4" fill="{rc}"/>',
@@ -382,20 +415,18 @@ def tdisplay_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
 def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
                   forecast_elapsed_seconds: float | None = None) -> str:
     w, h = 240, 320
-    station = (cfg.station_name or "Weather Station")[:20]
+    station = (cfg.station_name or "Weather Station")[:16]
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">',
         _defs(),
-        '<rect width="240" height="320" fill="url(#bg)"/>',
+        '<rect width="240" height="320" fill="#000000"/>',
         text(12, 21, station, 18, "start", WHITE, "900"),
     ]
 
-    if wx.date_utc_ms:
-        dt = datetime.fromtimestamp(wx.date_utc_ms / 1000)
-        date_s = dt.strftime("%a, %b %d, %Y").replace(" 0", " ")
-        out.append(text(229, 22, date_s, 6.6, "end", "#dbe7ee", "500"))
+    date_s = datetime.now().strftime("%a, %b %d, %Y").replace(" 0", " ")
+    out.append(text(229, 22, date_s, 6.6, "end", "#dbe7ee", "500"))
     out += [
-        text(12, 38, "WEATHER STATION", 5.2, "start", "#9db8ca", "600", 1.55),
+        text(12, 38, "CURRENT CONDITIONS", 5.2, "start", "#9db8ca", "800", 1.55),
         '<line x1="12" y1="47" x2="228" y2="47" stroke="#173f55" stroke-width=".7"/>',
     ]
 
@@ -414,13 +445,12 @@ def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         out += [
             f'<rect x="10" y="54" width="128" height="151" rx="12" fill="url(#heroCurrent)" '
             f'stroke="{risk["border"]}" stroke-width="1"/>',
-            icon(risk["icon"], 22, 73, 1.82),
+            _hero_icon("waveshare", wind_chill_applies(wx)),
             text(101, 76, apparent_title(wx), 9.4, "middle", WHITE, "800", .35),
             _apparent_parts(apparent, "waveshare"),
-            f'<rect x="18" y="170" width="112" height="24" rx="12" fill="url(#riskCurrent)" '
+            f'<rect x="18" y="170" width="112" height="24" rx="12" fill="{risk["status"]}" '
             f'stroke="{risk["accent"]}" stroke-width="1"/>',
-            icon("alert", 31, 174, .65),
-            text(85, 182, apparent_risk_label(wx), 7.2, "middle", risk["accent"], "900"),
+            text(74, 182, apparent_risk_label(wx), 7.2, "middle", risk["accent"], "900"),
         ]
 
         _metric(out, 143, 54, 87, 34, "temp", "TEMP",
@@ -487,10 +517,10 @@ def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         rc = "#ff7a67" if stale else GREEN
 
     out += [
-        icon("clock", 17, 280, .78),
+        _clock_icon(24, 290, 7),
         text(45, 290, left, 7.2, "start", lc, "650"),
         '<line x1="169" y1="280" x2="169" y2="300" stroke="#557385" stroke-width=".8"/>',
-        f'<circle cx="190" cy="290" r="3" fill="{rc}" filter="url(#softGlow)"/>',
+        f'<circle cx="190" cy="290" r="3" fill="{rc}"/>',
         text(221, 290, right, 7.2, "end", rc, "900"),
         "</svg>",
     ]
@@ -506,13 +536,18 @@ def _metric_7c(out, x, y, w, h, kind, label, value, value_size=25):
 
 
 def _apparent_parts_7c(value):
-    """Match the production 7C apparent-temperature group around centerX=320."""
     value_s = str(value)
-    number_size = 78 if len(value_s) >= 3 else 88
+    text_size = 8 if len(value_s) >= 3 else 9
+    number_font = text_size * 8
+    number_w = len(value_s) * 6 * text_size
+    group_w = number_w + 18 + 24
+    start_x = 320 - group_w / 2
+    degree_x = start_x + number_w + 7
+    f_x = start_x + number_w + 16
     return "".join([
-        text(300, 181, value_s, number_size, "middle", WHITE, "900"),
-        text(354, 151, "°", 25, "start", WHITE, "900"),
-        text(378, 181, "F", 38, "start", WHITE, "800"),
+        text(start_x, 143 + number_font / 2, value_s, number_font, "start", WHITE, "900"),
+        f'<circle cx="{degree_x}" cy="150" r="4" fill="none" stroke="{WHITE}" stroke-width="1.5"/>',
+        text(f_x, 179, "F", 32, "start", WHITE, "800"),
     ])
 
 
@@ -529,10 +564,8 @@ def waveshare_7c_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         text(30, 34, station, station_size, "start", WHITE, "900"),
     ]
 
-    if wx.date_utc_ms:
-        dt = datetime.fromtimestamp(wx.date_utc_ms / 1000)
-        date_s = dt.strftime("%a, %b %d, %Y").replace(" 0", " ")
-        out.append(text(770, 35, date_s, 16, "end", "#dbe7ee", "500"))
+    date_s = datetime.now().strftime("%a, %b %d, %Y").replace(" 0", " ")
+    out.append(text(770, 35, date_s, 16, "end", "#dbe7ee", "500"))
     out += [
         text(30, 64, "CURRENT CONDITIONS", 15, "start", "#9db8ca", "800", 1.2),
         '<line x1="30" y1="76" x2="770" y2="76" stroke="#173f55" stroke-width="1"/>',
@@ -556,10 +589,10 @@ def waveshare_7c_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         out += [
             f'<rect x="33" y="82" width="427" height="225" rx="18" fill="url(#heroCurrent)" '
             f'stroke="{risk["border"]}" stroke-width="1.5"/>',
-            icon(risk["icon"], 60 if not cold else 62, 110 if not cold else 135, 5.0 if not cold else 4.1),
+            _hero_icon("7c", cold),
             text(325, 116, apparent_title(wx), 24, "middle", WHITE, "900", 1.0),
             _apparent_parts_7c(apparent),
-            f'<rect x="60" y="260" width="373" height="34" rx="17" fill="url(#riskCurrent)" '
+            f'<rect x="60" y="260" width="373" height="34" rx="17" fill="{risk["status"]}" '
             f'stroke="{risk["accent"]}" stroke-width="1.4"/>',
             text(246, 277, apparent_risk_label(wx), 15, "middle", risk["accent"], "900", 1.0),
         ]
@@ -615,10 +648,10 @@ def waveshare_7c_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         rc = "#ff7a67" if stale else GREEN
 
     out += [
-        icon("clock", 55, 424, 1.2),
+        _clock_icon(67, 436, 12),
         text(94, 436, left, 15, "start", lc, "700"),
         '<line x1="570" y1="419" x2="570" y2="453" stroke="#557385" stroke-width="1"/>',
-        f'<circle cx="620" cy="436" r="5" fill="{rc}" filter="url(#softGlow)"/>',
+        f'<circle cx="620" cy="436" r="5" fill="{rc}"/>',
         text(746, 436, right, 15, "end", rc, "900", 1.0),
         "</svg>",
     ]

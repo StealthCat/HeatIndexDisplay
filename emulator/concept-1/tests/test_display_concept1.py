@@ -27,32 +27,27 @@ class Concept1DisplayTests(unittest.TestCase):
     def test_waveshare_concept1_features(self):
         svg = waveshare_svg(self.app.config, self.app.wx, forecast_elapsed_seconds=0)
         for literal in [
-            "WEATHER STATION", ">TEMP</text>", ">HUMIDITY</text>",
+            "CURRENT CONDITIONS", ">TEMP</text>", ">HUMIDITY</text>",
             ">DEW POINT</text>", ">FROM YDAY</text>", ">WIND</text>",
             ">DIRECTION</text>", ">TODAY</text>", ">ONLINE</text>"
         ]:
             self.assertIn(literal, svg)
 
-    def test_waveshare_100_does_not_use_old_overlapping_group(self):
+    def test_waveshare_100_matches_firmware_group(self):
         self.set_100_heat_index()
         svg = waveshare_svg(self.app.config, self.app.wx, forecast_elapsed_seconds=0)
-        self.assertIn('translate(22 73) scale(1.82)', svg)
-        self.assertIn('x="82" y="145"', svg)
         self.assertIn('>100</text>', svg)
-        self.assertIn('x="117" y="129"', svg)
-        self.assertIn('>°</text>', svg)
-        self.assertIn('x="123" y="145"', svg)
-        self.assertIn('>F</text>', svg)
-        self.assertNotIn('<text x="84" y="133"', svg)
+        self.assertIn('cx="119" cy="123" r="3"', svg)
+        self.assertIn('x="125" y="142"', svg)
+        self.assertNotIn('M10 2L18 17H2z', svg)
 
     def test_tdisplay_100_keeps_unit_inside_panel(self):
         self.set_100_heat_index()
         svg = tdisplay_svg(self.app.config, self.app.wx, forecast_elapsed_seconds=0)
-        self.assertIn('translate(17 70) scale(1.72)', svg)
-        self.assertIn('x="94" y="98"', svg)
-        self.assertIn('>100</text>', svg)
-        self.assertIn('x="125" y="84"', svg)
-        self.assertIn('x="132" y="98"', svg)
+        self.assertIn('x="98" y="98"', svg)
+        self.assertIn('cx="133" cy="83" r="3"', svg)
+        self.assertIn('x="145" y="101"', svg)
+        self.assertNotIn('M10 2L18 17H2z', svg)
 
     def test_forecast_alternates(self):
         today = waveshare_svg(self.app.config, self.app.wx, forecast_elapsed_seconds=0)

@@ -65,8 +65,8 @@ class Concept1PaletteTests(unittest.TestCase):
             self.assertIn('id="heroCurrent"', svg)
             self.assertIn('stop-color="#d83b35"', svg)
             self.assertIn('fill="url(#heroCurrent)"', svg)
-            self.assertIn('id="riskCurrent"', svg)
-            self.assertIn('stop-color="#52120e"', svg)
+            self.assertNotIn('id="riskCurrent"', svg)
+            self.assertIn('fill="#52120e"', svg)
 
 if __name__ == "__main__":
     unittest.main()
