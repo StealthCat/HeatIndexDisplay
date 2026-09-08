@@ -8,7 +8,7 @@ from http.server import ThreadingHTTPServer
 
 from .app_state import WeatherData, now_ms
 from .config_store import load_config, save_config, update_config
-from .display_ui import tdisplay_svg, waveshare_svg
+from .display_ui import tdisplay_svg, waveshare_svg, waveshare_7c_svg
 from .forecast_weather import (
     FORECAST_REFRESH_SECONDS,
     FORECAST_RETRY_SECONDS,
@@ -110,6 +110,10 @@ class EmulatorApp:
     def render_waveshare(self):
         with self.lock:
             return waveshare_svg(self.config, self.wx, self.last_api_error)
+
+    def render_waveshare_7c(self):
+        with self.lock:
+            return waveshare_7c_svg(self.config, self.wx, self.last_api_error)
 
     def apply_manual(self, data):
         with self.lock:

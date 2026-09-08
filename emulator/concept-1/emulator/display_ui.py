@@ -495,3 +495,132 @@ def waveshare_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
         "</svg>",
     ]
     return "".join(out)
+
+
+def _metric_7c(out, x, y, w, h, kind, label, value, value_size=25):
+    """Production-aligned metric card used by the 800x480 7C-BOX."""
+    out.append(card(x, y, w, h, 12, False))
+    out.append(icon(kind, x + 12, y + (h - 40) / 2, 2.0))
+    out.append(text(x + 64, y + 18, label, 16, "start", CYAN, "800", .5))
+    out.append(text(x + 64, y + 39, value, value_size, "start", WHITE, "900"))
+
+
+def _apparent_parts_7c(value):
+    """Match the production 7C apparent-temperature group around centerX=320."""
+    value_s = str(value)
+    number_size = 78 if len(value_s) >= 3 else 88
+    return "".join([
+        text(300, 181, value_s, number_size, "middle", WHITE, "900"),
+        text(354, 151, "°", 25, "start", WHITE, "900"),
+        text(378, 181, "F", 38, "start", WHITE, "800"),
+    ])
+
+
+def waveshare_7c_svg(cfg: AppConfig, wx: WeatherData, api_error: str = "",
+                     forecast_elapsed_seconds: float | None = None) -> str:
+    """Emulate the production Waveshare ESP32-S3-Touch-LCD-7C-BOX (800x480)."""
+    w, h = 800, 480
+    station = (cfg.station_name or "Weather Station")[:20]
+    station_size = 30 if len(station) <= 13 else 24
+    out = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">',
+        _defs(),
+        '<rect width="800" height="480" fill="#000000"/>',
+        text(30, 34, station, station_size, "start", WHITE, "900"),
+    ]
+
+    if wx.date_utc_ms:
+        dt = datetime.fromtimestamp(wx.date_utc_ms / 1000)
+        date_s = dt.strftime("%a, %b %d, %Y").replace(" 0", " ")
+        out.append(text(770, 35, date_s, 16, "end", "#dbe7ee", "500"))
+    out += [
+        text(30, 64, "CURRENT CONDITIONS", 15, "start", "#9db8ca", "800", 1.2),
+        '<line x1="30" y1="76" x2="770" y2="76" stroke="#173f55" stroke-width="1"/>',
+    ]
+
+    if not wx.valid:
+        out += [
+            card(33, 82, 734, 250, 18, True),
+            text(400, 155, "WAITING", 52, "middle", WHITE, "900"),
+            text(400, 220, "Weather API error" if api_error else "Preparing display",
+                 24, "middle", MUTED, "600"),
+            text(400, 270, "Fetching weather..." if not api_error else "Check provider configuration",
+                 18, "middle", "#72caff", "600"),
+        ]
+    else:
+        apparent = int(round(apparent_outdoor_f(wx)))
+        risk = _hero_palette(wx)
+        out.append(_hero_gradient_defs(risk))
+        cold = wind_chill_applies(wx)
+
+        out += [
+            f'<rect x="33" y="82" width="427" height="225" rx="18" fill="url(#heroCurrent)" '
+            f'stroke="{risk["border"]}" stroke-width="1.5"/>',
+            icon(risk["icon"], 60 if not cold else 62, 110 if not cold else 135, 5.0 if not cold else 4.1),
+            text(325, 116, apparent_title(wx), 24, "middle", WHITE, "900", 1.0),
+            _apparent_parts_7c(apparent),
+            f'<rect x="60" y="260" width="373" height="34" rx="17" fill="url(#riskCurrent)" '
+            f'stroke="{risk["accent"]}" stroke-width="1.4"/>',
+            text(246, 277, apparent_risk_label(wx), 15, "middle", risk["accent"], "900", 1.0),
+        ]
+
+        _metric_7c(out, 477, 82, 290, 50, "temp", "TEMP", fmt(wx.temp_f, 1, "°F"))
+        _metric_7c(out, 477, 137, 290, 50, "drop", "HUMIDITY", fmt(wx.humidity, 0, "%"))
+        _metric_7c(out, 477, 192, 290, 50, "leaf", "DEW POINT", fmt(wx.dew_point_f, 1, "°F"))
+        _metric_7c(out, 477, 247, 290, 60, "trend", "FROM YDAY", signed_delta(wx.from_yesterday_f))
+
+        out += [
+            card(33, 316, 207, 76, 14, True),
+            icon("wind", 48, 337, 2.0),
+            text(136, 330, "WIND", 15, "middle", "#9dc8e4", "800"),
+            text(160, 355, fmt(wx.wind_mph, 1), 30, "middle", WHITE, "900"),
+            text(160, 376, "mph", 10, "middle", "#9fb7c9", "700"),
+            text(136, 386, f"GUST {fmt(wx.gust_mph,1)}", 10, "middle", "#a6d1ea", "700"),
+            text(225, 386, f"MAX {fmt(wx.max_daily_gust_mph,1)}", 10, "end", "#a6d1ea", "700"),
+
+            card(253, 316, 207, 76, 14, True),
+            icon("compass", 270, 337, 2.0),
+            text(356, 330, "DIRECTION", 15, "middle", "#9dc8e4", "800"),
+            text(385, 356, (f"{round(wx.wind_dir_deg):.0f}°" if finite(wx.wind_dir_deg) else "--"),
+                 30, "middle", WHITE, "900"),
+            text(356, 384, (direction_text(wx.wind_dir_deg) if finite(wx.wind_dir_deg) else "--"),
+                 16, "middle", "#9dc8e4", "800"),
+        ]
+
+        tomorrow = forecast_shows_tomorrow(wx, forecast_elapsed_seconds)
+        fh = wx.forecast_tomorrow_high_f if tomorrow else wx.forecast_today_high_f
+        fl = wx.forecast_tomorrow_low_f if tomorrow else wx.forecast_today_low_f
+        forecast_value = (
+            f"{int(round(fh))}° / {int(round(fl))}°"
+            if wx.forecast_valid and finite(fh) and finite(fl) else "-- / --"
+        )
+        out += [
+            card(477, 316, 290, 76, 14, True),
+            icon("sun", 493, 335, 2.0),
+            text(620, 330, "TOMORROW" if tomorrow else "TODAY", 15, "middle", "#9dc8e4", "800"),
+            text(620, 348, "HIGH / LOW F", 10, "middle", "#9db6c6", "650"),
+            text(635, 371, forecast_value, 30, "middle", WHITE, "900"),
+        ]
+
+    out += [card(33, 410, 734, 52, 14, True)]
+    if not wx.valid:
+        left = "Weather API error" if api_error else "Fetching weather..."
+        right = "OFFLINE"
+        lc, rc = ("#ff7a67" if api_error else WHITE), "#ff6b5b"
+    else:
+        stale = is_stale(cfg, wx)
+        left = f"Updated {_updated_text(wx)}"
+        right = "STALE" if stale else "ONLINE"
+        lc = "#ff7a67" if stale else WHITE
+        rc = "#ff7a67" if stale else GREEN
+
+    out += [
+        icon("clock", 55, 424, 1.2),
+        text(94, 436, left, 15, "start", lc, "700"),
+        '<line x1="570" y1="419" x2="570" y2="453" stroke="#557385" stroke-width="1"/>',
+        f'<circle cx="620" cy="436" r="5" fill="{rc}" filter="url(#softGlow)"/>',
+        text(746, 436, right, 15, "end", rc, "900", 1.0),
+        "</svg>",
+    ]
+    return "".join(out)
+

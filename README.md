@@ -132,7 +132,9 @@ The emulator lives in:
 emulator/concept-1/
 ```
 
-It is the V7.11.9 Concept-1 desktop/browser implementation and mirrors the production data flow while replacing ESP32 hardware, GPIO, display buses, NVS, and embedded web plumbing with desktop equivalents.
+It is the V7.11.10 Concept-1 desktop/browser implementation and mirrors the production data flow while replacing ESP32 hardware, GPIO, display buses, NVS, and embedded web plumbing with desktop equivalents.
+
+The browser emulator now renders all three production display targets: **LILYGO T-Display S3 (170×320)**, **Waveshare ESP32-S3 Touch LCD 2.8 (240×320)**, and **Waveshare ESP32-S3-Touch-LCD-7C-BOX (800×480)**. The 7C preview is available at `/render/waveshare-7c.svg`.
 
 ## Emulator requirements
 
@@ -210,17 +212,17 @@ From `emulator/concept-1` run:
 python3 -m unittest discover -s tests -v
 ```
 
-The suite covers weather math, provider REST history behavior, provider coordinate extraction, Open-Meteo parsing, 30-second Today/Tomorrow switching, Concept-1 display rendering, dynamic risk palettes, and controller integration.
+The suite covers weather math, provider REST history behavior, provider coordinate extraction, Open-Meteo parsing, 30-second Today/Tomorrow switching, all three Concept-1 display renderers including the 800×480 7C-BOX, dynamic risk palettes, and controller integration.
 
 ## Emulator source parity
 
-The downloadable source archive remains **HeatIndexDisplay-Emulator-V7.11.9-Concept1.zip** with source SHA-256:
+The downloadable source archive remains **HeatIndexDisplay-Emulator-V7.11.10-Concept1.zip** with source SHA-256:
 
 ```text
-2c74b84b08e240e6c1c30f4b8410ca6a9a955cb416b8cfbca77d180d95379059
+a83eeeaa97dc239f16b36f5df9c2a73a6a9d1b38d026a5cc6384a3c2c27eb275
 ```
 
-The repository intentionally omits the archive's embedded Markdown documentation because all documentation is consolidated into this root `README.md`. CI verifies the remaining **30 functional emulator files** against their hashes from the downloadable package and runs the full test suite.
+The repository intentionally omits the archive's embedded Markdown documentation because all documentation is consolidated into this root `README.md`. CI verifies the remaining **32 functional emulator files** against their hashes from the downloadable package and runs the full test suite.
 
 ## Consolidated release history
 
@@ -254,6 +256,7 @@ The repository intentionally omits the archive's embedded Markdown documentation
 - **V7.11.7** — Concept-1 visual reimagine.
 - **V7.11.8** — Concept-1 text-placement correction.
 - **V7.11.9** — dynamic Heat Index and Wind Chill risk palettes matching current Concept-1 behavior.
+- **V7.11.10** — adds first-class 800×480 Waveshare 7C-BOX emulator support.
 
 ## Documentation policy
 

@@ -8,7 +8,7 @@ HTML = r'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HeatIndexDisplay V7.11.9 Concept 1 Emulator</title>
+<title>HeatIndexDisplay V7.11.10 Concept 1 Emulator</title>
 <style>
 :root{color-scheme:dark;--bg:#07131d;--panel:#0b1f2c;--panel2:#0d2838;--line:#17445d;--cyan:#41cdff;--text:#edf8ff;--muted:#9cb3c2}
 *{box-sizing:border-box}body{margin:0;font:14px system-ui,Segoe UI,Arial;background:linear-gradient(180deg,#061019,#0a1b27);color:var(--text)}
@@ -20,7 +20,7 @@ section{background:var(--panel);border:1px solid var(--line);border-radius:12px;
 .device{background:linear-gradient(145deg,#0b1116,#020508);border:1px solid #6e8291;border-radius:24px;padding:16px;box-shadow:0 18px 45px #000b,inset 0 0 0 3px #111b22}
 .device h3{text-align:center;font-size:13px;margin:0 0 12px;color:#adc7da;letter-spacing:.25px;font-weight:700}
 .device img{display:block;background:#000;border-radius:3px;box-shadow:0 0 0 1px #0a1117,0 0 28px #00121f66}
-#tdisplay{width:255px;height:480px}#waveshare{width:360px;height:480px}
+#tdisplay{width:255px;height:480px}#waveshare{width:360px;height:480px}#waveshare7c{width:600px;height:360px}
 h2{font-size:14px;margin:0 0 12px;color:var(--cyan)}
 .controls{display:grid;gap:14px}.group{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -32,13 +32,14 @@ small{color:var(--muted)}@media(max-width:980px){main{grid-template-columns:1fr}
 </style>
 </head>
 <body>
-<header><h1>HeatIndexDisplay V7.11.9 Concept 1 Emulator</h1><p>V7.11.6: provider observations/history plus Open-Meteo forecast high/low, alternating Today/Tomorrow every 30 seconds.</p></header>
+<header><h1>HeatIndexDisplay V7.11.10 Concept 1 Emulator</h1><p>V7.11.6: provider observations/history plus Open-Meteo forecast high/low, alternating Today/Tomorrow every 30 seconds.</p></header>
 <main>
 <section>
 <h2>Live display previews</h2>
 <div class="preview-grid">
   <div class="device"><h3>LILYGO T-Display S3 · 170×320</h3><img id="tdisplay" src="/render/tdisplay.svg"></div>
   <div class="device"><h3>Waveshare 2.8 · 240×320</h3><img id="waveshare" src="/render/waveshare.svg"></div>
+  <div class="device"><h3>Waveshare 7C BOX · 800×480</h3><img id="waveshare7c" src="/render/waveshare-7c.svg"></div>
 </div>
 </section>
 <section class="controls">
@@ -82,7 +83,7 @@ small{color:var(--muted)}@media(max-width:980px){main{grid-template-columns:1fr}
 <script>
 const ids=['temp_f','humidity','dew_point_f','wind_mph','gust_mph','wind_dir_deg','from_yesterday_f','today_high_f','today_low_f','forecast_today_high_f','forecast_today_low_f','forecast_tomorrow_high_f','forecast_tomorrow_low_f'];
 async function jfetch(url,opts){const r=await fetch(url,opts);const j=await r.json();if(!r.ok)throw new Error(j.error||r.statusText);return j}
-function refreshImages(){const t=Date.now();tdisplay.src='/render/tdisplay.svg?t='+t;waveshare.src='/render/waveshare.svg?t='+t}
+function refreshImages(){const t=Date.now();tdisplay.src='/render/tdisplay.svg?t='+t;waveshare.src='/render/waveshare.svg?t='+t;waveshare7c.src='/render/waveshare-7c.svg?t='+t}
 async function refresh(){try{const s=await jfetch('/api/state');for(const id of ids){const v=s.weather[id];if(v!==null&&document.activeElement.id!==id)document.getElementById(id).value=v}status.textContent=JSON.stringify(s.status,null,2);refreshImages()}catch(e){status.textContent=e.message}}
 async function loadConfig(){const c=await jfetch('/api/config');for(const k of ['station_name','weather_source','ambient_mac_address','wu_station_id','poll_seconds','stale_seconds','data_mode','preset_name'])if(document.getElementById(k))document.getElementById(k).value=c[k]??'';updateModeUi()}
 async function applyManual(){const p={};for(const id of ids){const v=document.getElementById(id).value;p[id]=v===''?null:Number(v)}await jfetch('/api/manual',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});data_mode.value='preset';preset_name.value='manual';updateModeUi();await refresh()}
@@ -97,7 +98,7 @@ loadConfig().then(refresh);setInterval(refresh,1500);
 
 def handler_factory(app):
     class Handler(BaseHTTPRequestHandler):
-        server_version = "HeatIndexDisplayEmulator/7.11.6"
+        server_version = "HeatIndexDisplayEmulator/7.11.10"
 
         def log_message(self, fmt, *args):
             if app.verbose:
@@ -133,6 +134,8 @@ def handler_factory(app):
                 return self._send(app.render_tdisplay().encode("utf-8"), "image/svg+xml; charset=utf-8")
             if path == "/render/waveshare.svg":
                 return self._send(app.render_waveshare().encode("utf-8"), "image/svg+xml; charset=utf-8")
+            if path == "/render/waveshare-7c.svg":
+                return self._send(app.render_waveshare_7c().encode("utf-8"), "image/svg+xml; charset=utf-8")
             return self._json({"error": "not found"}, 404)
 
         def do_POST(self):

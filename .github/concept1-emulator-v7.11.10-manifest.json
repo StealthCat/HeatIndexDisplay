@@ -1,20 +1,20 @@
 {
-  "archive": "HeatIndexDisplay-Emulator-V7.11.9-Concept1.zip",
-  "source_archive_sha256": "2c74b84b08e240e6c1c30f4b8410ca6a9a955cb416b8cfbca77d180d95379059",
+  "archive": "HeatIndexDisplay-Emulator-V7.11.10-Concept1.zip",
+  "source_archive_sha256": "a83eeeaa97dc239f16b36f5df9c2a73a6a9d1b38d026a5cc6384a3c2c27eb275",
   "documentation": "Consolidated into repository root README.md; Markdown files from the downloadable package are intentionally omitted.",
-  "file_count": 30,
+  "file_count": 32,
   "files": {
     "config.example.json": "f17b38ddd6efd5141d83958f400fecd1873f323d4f7af8bf131361d5eb903a18",
-    "emulator/__init__.py": "837c0fa46e6dd5fd13222201c6ccc30a814e5685c79e1e5e4f60e6a08fb8b413",
+    "emulator/__init__.py": "275f53f51c960705710fddd1c517988e6ca9f0735d4c4e46bf6908cf25f3c63c",
     "emulator/ambient_weather.py": "5becda69bea297d814b9660ca4fd5df28ca0fbfea68cebde84bf5ba9c71ed1b0",
-    "emulator/app_controller.py": "a7686df2d34cdda1d97cab5201c1d94da821d880800dbb83efac85553d3dd062",
+    "emulator/app_controller.py": "acdf5bb5c7b5b79956bda7cb6778937ea272ebb21151c02af6bc8ff5e77cc77e",
     "emulator/app_state.py": "320e12662ebd8b190ec253397d0c20df4d5a34b27a1662285c3cac65c9b29142",
     "emulator/config_store.py": "9d2901df210fcbd4cb3709259b7288b8e810edba5e0995782f0bec7c05dcf6f1",
-    "emulator/display_ui.py": "a0562a11d9bddb0056b15e5a5ba36ca5f2e82f086d5d3d266ef80ef488185dbb",
+    "emulator/display_ui.py": "625f164bf7ad299baeae0a4ead6ffb0a0b8c038afbba175f935e452b0a0f3c6c",
     "emulator/forecast_weather.py": "73541e39563e87bec5c9c21f6c1a1e0b3b9b8e91bd88caccdf9daeb4592b1b56",
     "emulator/weather_math.py": "993b193608b6db8decf8d59dc099b6a4af4d2038101aade0f5c0956f44cc808c",
     "emulator/weather_source.py": "df4a1d65311b48c4c8881bbe39cc1b9acadef8a0d861a06af34b70edc9ca0cc4",
-    "emulator/web_ui.py": "1a08f5bc3a6304bd2c65f0911b1bc8339bffff928fa68bb4c1c3e6d9020f8f12",
+    "emulator/web_ui.py": "7c68a61be546188f8ec0c9c29f34e20bc471796fc8aa777b02732bdb2ec1928c",
     "emulator/wunderground_weather.py": "8104923e37cdd7c6edc5a21a49d44f5ea57be94b63a122f77481237b4b715312",
     "main.py": "c9b05d14b53aa770eb2bad9e167c697dc16b8ad017fe652a55e5561c09a0d535",
     "preview_tdisplay.svg": "9cd0660ce1dffb1fdee6909957310d585d7dceac3f7d447d33210fa839f8ef90",
@@ -23,6 +23,7 @@
     "preview_tdisplay_tomorrow.svg": "be413d76d10979f26a97aa99b9dfcfc89faa9c1860d1918dd5a470648f9e4c25",
     "preview_waveshare.svg": "096b3342cc91e524d9b35426101468b67146372e24672a655bf5aea4b8e451fc",
     "preview_waveshare_100F_alignment.svg": "48624fdd08e4ad322dc85a98073fd166988df27c47d7f2774a6504249a5b1733",
+    "preview_waveshare_7c_box.svg": "9ce6c01164138fc80e2584f69e395a41a5e7bc10106b3feebe8b3151a4312dfe",
     "preview_waveshare_concept1.svg": "820439beb1352e38c9087cdd14ac540acf6edef8902e69ba23725410833f8eb7",
     "preview_waveshare_concept1_tomorrow.svg": "3f2a56da6ccef001adcfe306836e9b247336c180fc26355e5327a1faaabad559",
     "preview_waveshare_today.svg": "87ba592e2e6f3ba77c3c0ed4d840fb6032c22ae2eca1410720face753852c5ba",
@@ -33,6 +34,7 @@
     "tests/test_display_concept1_palettes.py": "36733c53a6e95bcc04667ea072229005bbff36b649c27746697223741725ea25",
     "tests/test_forecast_v79.py": "80e3f1b10290b904e59b264c99421d2f4579f9f68453b872304c14df9748afbb",
     "tests/test_provider_rest_summary.py": "500390b16e6277349c29ac6ea168e0aa818bd6f878ffd07940374c59994938fd",
+    "tests/test_waveshare_7c_box.py": "a55e28e9d94a3d1b93cc8b5fb2704a8005dfca4bb82c8a59f950a9d4302ef2d3",
     "tests/test_weather_math.py": "ec6c93e12f7f747da39ef9b4d93c9e67ad6827ca4346b8b70dcd35ab734c9927"
   }
 }
