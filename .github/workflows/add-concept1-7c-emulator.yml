@@ -54,7 +54,12 @@ jobs:
         run: |
           find emulator/concept-1 -type d -name __pycache__ -prune -exec rm -rf {} +
           rm -f emulator/concept-1/emulator_config.json
-          rm -rf .github/7c-patch .github/workflows/add-concept1-7c-emulator.yml
+          rm -rf .github/7c-patch
+          # GITHUB_TOKEN cannot modify workflow files. Keep both workflows unchanged
+          # in this commit; cleanup and sync-workflow version update are performed
+          # separately through the connected GitHub integration.
+          git checkout HEAD -- .github/workflows/concept-1-emulator-sync.yml
+          git checkout HEAD -- .github/workflows/add-concept1-7c-emulator.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
