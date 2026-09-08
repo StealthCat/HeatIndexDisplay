@@ -56,6 +56,9 @@ jobs:
           manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
           PY
 
+      - name: Install test dependency
+        run: python -m pip install pytest
+
       - name: Run emulator tests
         working-directory: emulator/concept-1
         run: python -m pytest -q
