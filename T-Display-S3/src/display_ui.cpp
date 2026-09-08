@@ -242,12 +242,6 @@ static void drawHeroWind(int x, int y) {
   display.drawLine(x + 3, y + 18, x + 29, y + 18, blue);
 }
 
-static void drawAlertTriangle(int cx, int cy, uint16_t color) {
-  display.fillTriangle(cx, cy - 6, cx - 6, cy + 5, cx + 6, cy + 5, color);
-  display.drawFastVLine(cx, cy - 2, 4, C_BLACK);
-  display.fillCircle(cx, cy + 3, 1, C_BLACK);
-}
-
 static void drawClockIcon(int cx, int cy, uint16_t color) {
   display.drawCircle(cx, cy, 6, color);
   display.drawFastVLine(cx, cy - 3, 4, color);
@@ -445,9 +439,8 @@ void drawWeatherScreen() {
 
   display.fillRoundRect(16, 116, 138, 20, 10, risk.status);
   display.drawRoundRect(16, 116, 138, 20, 10, risk.accent);
-  drawAlertTriangle(31, 126, risk.accent);
   display.setFont(&fonts::Font0);
-  drawBoldText(apparentRiskLabel(), 90, 126, risk.accent);
+  drawBoldText(apparentRiskLabel(), 85, 126, risk.accent);
 
   // Metric cards: icon left, label above value.
   drawMetricCard(7, 149, 77, 31);

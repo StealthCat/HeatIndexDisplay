@@ -219,12 +219,6 @@ static void drawHeroWind(int x, int y) {
   gfx->drawLine(x + 4, y + 22, x + 35, y + 22, blue);
 }
 
-static void drawAlertTriangle(int cx, int cy, uint16_t color) {
-  gfx->fillTriangle(cx, cy - 7, cx - 7, cy + 6, cx + 7, cy + 6, color);
-  gfx->drawFastVLine(cx, cy - 2, 5, C_BLACK);
-  gfx->fillCircle(cx, cy + 4, 1, C_BLACK);
-}
-
 static void drawClockIcon(int cx, int cy, uint16_t color) {
   gfx->drawCircle(cx, cy, 7, color);
   gfx->drawFastVLine(cx, cy - 4, 5, color);
@@ -410,8 +404,7 @@ void drawWeatherScreen() {
 
   gfx->fillRoundRect(18, 170, 112, 24, 12, risk.status);
   gfx->drawRoundRect(18, 170, 112, 24, 12, risk.accent);
-  drawAlertTriangle(32, 182, risk.accent);
-  centerBoldText(apparentRiskLabel(), 85, 179, 1, risk.accent);
+  centerBoldText(apparentRiskLabel(), 74, 179, 1, risk.accent);
 
   // Right-side metric stack.
   drawConceptCard(143, 54, 87, 34, 7, false);
