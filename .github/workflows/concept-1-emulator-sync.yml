@@ -6,14 +6,14 @@ on:
     paths:
       - 'README.md'
       - 'emulator/concept-1/**'
-      - '.github/concept1-emulator-v7.11.9-manifest.json'
+      - '.github/concept1-emulator-v7.11.10-manifest.json'
       - '.github/workflows/concept-1-emulator-sync.yml'
   pull_request:
     branches: [concept-1]
     paths:
       - 'README.md'
       - 'emulator/concept-1/**'
-      - '.github/concept1-emulator-v7.11.9-manifest.json'
+      - '.github/concept1-emulator-v7.11.10-manifest.json'
 
 jobs:
   verify-emulator-sync:
@@ -31,17 +31,17 @@ jobs:
             exit 1
           fi
 
-      - name: Verify functional emulator files against downloadable ZIP
+      - name: Verify V7.11.10 functional emulator parity
         shell: bash
         run: |
           python3 - <<'PY'
           import hashlib, json
           from pathlib import Path
           root = Path('emulator/concept-1')
-          manifest = json.loads(Path('.github/concept1-emulator-v7.11.9-manifest.json').read_text())
+          manifest = json.loads(Path('.github/concept1-emulator-v7.11.10-manifest.json').read_text())
           actual = {}
           for p in root.rglob('*'):
-              if p.is_file():
+              if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc':
                   actual[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
           expected = manifest['files']
           missing = sorted(set(expected) - set(actual))
@@ -56,6 +56,15 @@ jobs:
               raise SystemExit(f"file count mismatch: {len(actual)} != {manifest['file_count']}")
           print(f"Functional emulator parity OK: {len(actual)} files from {manifest['archive']}")
           PY
+
+      - name: Verify Waveshare 7C-BOX target
+        shell: bash
+        run: |
+          grep -q 'def waveshare_7c_svg' emulator/concept-1/emulator/display_ui.py
+          grep -q '/render/waveshare-7c.svg' emulator/concept-1/emulator/web_ui.py
+          grep -q 'Waveshare 7C BOX · 800×480' emulator/concept-1/emulator/web_ui.py
+          test -f emulator/concept-1/preview_waveshare_7c_box.svg
+          test -f emulator/concept-1/tests/test_waveshare_7c_box.py
 
       - name: Run full emulator tests
         working-directory: emulator/concept-1
