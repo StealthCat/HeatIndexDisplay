@@ -3,16 +3,49 @@ name: Concept-1 Emulator Sync
 on:
   push:
     branches: [concept-1]
+    paths:
+      - 'emulator/concept-1/**'
+      - '.github/concept1-emulator-v7.11.9-manifest.json'
+      - '.github/workflows/concept-1-emulator-sync.yml'
   pull_request:
     branches: [concept-1]
+    paths:
+      - 'emulator/concept-1/**'
+      - '.github/concept1-emulator-v7.11.9-manifest.json'
 
 jobs:
   verify-emulator-sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Verify production/emulator sync
-        run: node emulator/concept-1/verify-sync.mjs
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify repository matches downloadable ZIP
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('emulator/concept-1')
+          manifest = json.loads(Path('.github/concept1-emulator-v7.11.9-manifest.json').read_text())
+          actual = {}
+          for p in root.rglob('*'):
+              if p.is_file():
+                  actual[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
+          expected = manifest['files']
+          missing = sorted(set(expected) - set(actual))
+          extra = sorted(set(actual) - set(expected))
+          changed = sorted(k for k in set(expected) & set(actual) if expected[k] != actual[k])
+          if missing or extra or changed:
+              print('Missing:', missing)
+              print('Extra:', extra)
+              print('Changed:', changed)
+              raise SystemExit(1)
+          if len(actual) != manifest['file_count']:
+              raise SystemExit(f"file count mismatch: {len(actual)} != {manifest['file_count']}")
+          print(f"ZIP parity OK: {len(actual)} files match {manifest['archive']}")
+          PY
+
+      - name: Run full emulator tests
+        working-directory: emulator/concept-1
+        run: python3 -m unittest discover -s tests -v
