@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concept-1 7C Emulator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <section class="stage-shell" aria-label="Concept-1 display emulator">
+      <div id="display" class="display" role="img" aria-label="800 by 480 weather display">
+        <div class="station" id="stationName">CRONIN FARM WEATHER</div>
+        <div class="date" id="dateText"></div>
+        <div class="section-title">CURRENT CONDITIONS</div>
+        <div class="divider"></div>
+
+        <section class="hero card">
+          <div class="hero-title" id="apparentLabel">HEAT INDEX</div>
+          <div class="hero-temp"><span id="apparentValue">--</span><span class="degree">°</span><span class="unit">F</span></div>
+          <div class="hero-icon" id="heroIcon">☀</div>
+          <div class="risk-badge" id="riskBadge">NORMAL</div>
+        </section>
+
+        <section class="metric card temp-card"><span class="metric-label">TEMP</span><span class="metric-value" id="tempValue">--°</span></section>
+        <section class="metric card humidity-card"><span class="metric-label">HUMIDITY</span><span class="metric-value" id="humidityValue">--%</span></section>
+        <section class="metric card dew-card"><span class="metric-label">DEW POINT</span><span class="metric-value" id="dewValue">--°</span></section>
+        <section class="metric card yesterday-card"><span class="metric-label">FROM YDAY</span><span class="metric-value" id="ydayValue">--°</span><span class="metric-sub" id="ydayDetail"></span></section>
+
+        <section class="bottom card wind-card"><span class="bottom-label">WIND</span><strong id="windValue">--</strong><span class="mph-label">mph</span><span class="bottom-sub" id="gustValue">GUST --</span><span class="max-gust" id="maxGustValue">MAX --</span></section>
+        <section class="bottom card direction-card"><span class="bottom-label">DIRECTION</span><strong id="directionDegrees">--°</strong><span class="bottom-sub direction-name" id="directionValue">--</span></section>
+        <section class="bottom card forecast-card"><span class="bottom-label" id="forecastLabel">TODAY</span><strong id="forecastValue">H --° / L --°</strong><span class="bottom-sub" id="forecastDetail"></span></section>
+
+        <footer class="footer card"><span id="updatedText">Updated --</span><strong id="statusText">ONLINE</strong></footer>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Emulator controls">
+      <div class="control-heading"><h1>Concept-1 Emulator</h1><span>Production 7C display contract</span></div>
+      <div class="presets">
+        <button data-preset="normal">Normal</button><button data-preset="caution">Caution</button><button data-preset="danger">Danger</button><button data-preset="extreme">Extreme</button><button data-preset="cold">Wind Chill</button>
+      </div>
+      <div class="control-grid">
+        <label>Temperature °F<input id="inputTemp" type="number" step="0.1" value="94"></label>
+        <label>Humidity %<input id="inputHumidity" type="number" min="0" max="100" step="1" value="58"></label>
+        <label>Wind mph<input id="inputWind" type="number" min="0" step="0.1" value="6"></label>
+        <label>Gust mph<input id="inputGust" type="number" min="0" step="0.1" value="12"></label>
+        <label>Daily max gust mph<input id="inputMaxGust" type="number" min="0" step="0.1" value="18"></label>
+        <label>Direction °<input id="inputDirection" type="number" min="0" max="359" step="1" value="225"></label>
+        <label>From yesterday °F<input id="inputYday" type="number" step="0.1" value="3"></label>
+        <label>Today high °F<input id="inputTodayHigh" type="number" step="1" value="97"></label>
+        <label>Today low °F<input id="inputTodayLow" type="number" step="1" value="74"></label>
+        <label>Tomorrow high °F<input id="inputTomorrowHigh" type="number" step="1" value="95"></label>
+        <label>Tomorrow low °F<input id="inputTomorrowLow" type="number" step="1" value="73"></label>
+        <label>Station<input id="inputStation" type="text" value="CRONIN FARM WEATHER"></label>
+        <label class="checkbox"><input id="inputStale" type="checkbox">STALE / offline</label>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
