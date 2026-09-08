@@ -1,0 +1,36 @@
+name: Apply Concept 1 header sync
+
+on:
+  push:
+    branches: [concept-1]
+    paths:
+      - tools/apply_concept1_header_sync.py
+      - .github/workflows/concept1-header-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout concept-1
+        uses: actions/checkout@v7
+        with:
+          ref: concept-1
+          fetch-depth: 0
+
+      - name: Apply header changes
+        run: python tools/apply_concept1_header_sync.py
+
+      - name: Commit firmware changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add T-Display-S3/src/display_ui.cpp Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Sync Concept 1 display headers"
+          git push origin HEAD:concept-1
