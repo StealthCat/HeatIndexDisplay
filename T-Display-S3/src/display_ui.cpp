@@ -85,16 +85,82 @@ static uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
 
 struct RiskStyle {
   const char *label;
-  uint16_t panel;
+  uint16_t panelTop;
+  uint16_t panelBottom;
+  uint16_t border;
   uint16_t status;
+  uint16_t accent;
 };
 
+// The linked NWS HeatRisk graphic uses the progression
+// green -> yellow -> orange -> red -> magenta. HeatRisk itself is a forecast
+// product that also considers climatology, duration and overnight relief, so
+// this display does not claim to calculate HeatRisk. Instead, the Concept 1
+// hero uses that NWS color progression as a visual guide while retaining the
+// existing NWS heat-index thresholds and labels used by this firmware.
 RiskStyle riskFor(float apparentF) {
-  (void)apparentF;
   if (windChillApplies()) {
-    return {"", rgb565(10, 52, 94), rgb565(8, 28, 49)};
+    return {"", rgb565(18, 79, 134), rgb565(6, 25, 44),
+            rgb565(88, 183, 255), rgb565(8, 28, 49), rgb565(123, 201, 255)};
   }
-  return {"", rgb565(108, 40, 14), rgb565(48, 18, 10)};
+
+  if (apparentF >= 125.0f) {
+    return {"", rgb565(178, 21, 133), rgb565(55, 8, 47),
+            rgb565(244, 87, 204), rgb565(76, 10, 64), rgb565(255, 139, 228)};
+  }
+  if (apparentF >= 103.0f) {
+    return {"", rgb565(216, 59, 53), rgb565(70, 17, 15),
+            rgb565(255, 113, 104), rgb565(82, 18, 14), rgb565(255, 140, 130)};
+  }
+  if (apparentF >= 90.0f) {
+    return {"", rgb565(221, 117, 29), rgb565(71, 30, 8),
+            rgb565(255, 173, 75), rgb565(88, 35, 7), rgb565(255, 192, 110)};
+  }
+  if (apparentF >= 80.0f) {
+    return {"", rgb565(197, 155, 23), rgb565(66, 50, 7),
+            rgb565(255, 228, 94), rgb565(91, 68, 7), rgb565(255, 235, 128)};
+  }
+  return {"", rgb565(40, 122, 69), rgb565(10, 35, 20),
+          rgb565(97, 216, 137), rgb565(18, 58, 32), rgb565(143, 232, 170)};
+}
+
+static uint16_t lerp565(uint16_t a, uint16_t b, float t) {
+  int ar = (a >> 11) & 0x1F;
+  int ag = (a >> 5) & 0x3F;
+  int ab = a & 0x1F;
+  int br = (b >> 11) & 0x1F;
+  int bg = (b >> 5) & 0x3F;
+  int bb = b & 0x1F;
+
+  int r = ar + (int)lroundf((br - ar) * t);
+  int g = ag + (int)lroundf((bg - ag) * t);
+  int bl = ab + (int)lroundf((bb - ab) * t);
+  return ((uint16_t)r << 11) | ((uint16_t)g << 5) | (uint16_t)bl;
+}
+
+static void fillGradientRoundRect(int x, int y, int w, int h, int radius,
+                                  uint16_t top, uint16_t bottom) {
+  for (int row = 0; row < h; row++) {
+    float t = h > 1 ? (float)row / (float)(h - 1) : 0.0f;
+    int inset = 0;
+
+    if (row < radius) {
+      float dy = (float)(radius - row);
+      float inside = (float)(radius * radius) - dy * dy;
+      if (inside < 0.0f) inside = 0.0f;
+      inset = radius - (int)sqrtf(inside);
+    } else if (row >= h - radius) {
+      float dy = (float)(row - (h - radius - 1));
+      float inside = (float)(radius * radius) - dy * dy;
+      if (inside < 0.0f) inside = 0.0f;
+      inset = radius - (int)sqrtf(inside);
+    }
+
+    int lineW = w - inset * 2;
+    if (lineW > 0) {
+      display.drawFastHLine(x + inset, y + row, lineW, lerp565(top, bottom, t));
+    }
+  }
 }
 
 static void drawIconBitmap(int x, int y, const uint16_t *icon) {
@@ -342,18 +408,15 @@ void drawWeatherScreen() {
 
   const uint16_t cyan = rgb565(114, 202, 255);
   const uint16_t green = rgb565(123, 220, 71);
-  const uint16_t warmBorder = rgb565(226, 107, 48);
-  const uint16_t coldBorder = rgb565(88, 183, 255);
-  const uint16_t alertWarm = rgb565(255, 118, 94);
-  const uint16_t alertCold = rgb565(123, 201, 255);
 
   float apparentF = apparentOutdoorF();
   RiskStyle risk = riskFor(apparentF);
   const bool cold = windChillApplies();
 
-  // Concept 1 hero panel.
-  display.fillRoundRect(8, 43, 154, 101, 11, risk.panel);
-  display.drawRoundRect(8, 43, 154, 101, 11, cold ? coldBorder : warmBorder);
+  // Concept 1 hero panel. In heat-index mode the gradient follows the
+  // NWS-inspired green/yellow/orange/red/magenta risk progression.
+  fillGradientRoundRect(8, 43, 154, 101, 11, risk.panelTop, risk.panelBottom);
+  display.drawRoundRect(8, 43, 154, 101, 11, risk.border);
 
   if (cold) drawHeroWind(18, 82);
   else drawHeroSun(32, 88);
@@ -364,10 +427,10 @@ void drawWeatherScreen() {
   drawApparentTemperature(apparentF);
 
   display.fillRoundRect(16, 116, 138, 20, 10, risk.status);
-  display.drawRoundRect(16, 116, 138, 20, 10, cold ? alertCold : alertWarm);
-  drawAlertTriangle(31, 126, cold ? alertCold : alertWarm);
+  display.drawRoundRect(16, 116, 138, 20, 10, risk.accent);
+  drawAlertTriangle(31, 126, risk.accent);
   display.setFont(&fonts::Font0);
-  drawBoldText(apparentRiskLabel(), 90, 126, cold ? alertCold : alertWarm);
+  drawBoldText(apparentRiskLabel(), 90, 126, risk.accent);
 
   // Metric cards: icon left, label above value.
   drawMetricCard(7, 149, 77, 31);
