@@ -46,6 +46,23 @@ struct RiskStyle {
 // existing NWS heat-index thresholds and risk labels.
 RiskStyle riskFor(float apparentF) {
   if (windChillApplies()) {
+    // The NWS wind-chill chart colors indicate approximate frostbite time:
+    // light blue = 30 minutes, deeper blue = 10 minutes, purple = 5 minutes.
+    // The NWS threshold guidance is approximately -18F, -32F and -48F.
+    // Concept 1 keeps its dark vertical-gradient treatment while following
+    // that progression as the calculated wind chill becomes more dangerous.
+    if (apparentF <= -48.0f) {
+      return {"", rgb565(108, 58, 168), rgb565(31, 15, 67),
+              rgb565(190, 132, 242), rgb565(39, 18, 79), rgb565(219, 172, 255)};
+    }
+    if (apparentF <= -32.0f) {
+      return {"", rgb565(37, 105, 184), rgb565(10, 34, 78),
+              rgb565(99, 171, 255), rgb565(9, 30, 67), rgb565(139, 198, 255)};
+    }
+    if (apparentF <= -18.0f) {
+      return {"", rgb565(78, 166, 218), rgb565(13, 61, 96),
+              rgb565(158, 223, 255), rgb565(11, 48, 76), rgb565(194, 235, 255)};
+    }
     return {"", rgb565(18, 79, 134), rgb565(6, 25, 44),
             rgb565(88, 183, 255), rgb565(8, 28, 49), rgb565(123, 201, 255)};
   }
@@ -380,8 +397,8 @@ void drawWeatherScreen() {
   RiskStyle risk = riskFor(apparentF);
   const bool cold = windChillApplies();
 
-  // Concept 1 hero panel. In heat-index mode the gradient follows the
-  // NWS-inspired green/yellow/orange/red/magenta risk progression.
+  // Concept 1 hero panel. Heat Index follows the NWS-inspired HeatRisk
+  // progression; Wind Chill follows the NWS frostbite-time chart colors.
   fillGradientRoundRect(10, 54, 128, 151, 12, risk.panelTop, risk.panelBottom);
   gfx->drawRoundRect(10, 54, 128, 151, 12, risk.border);
 
