@@ -56,6 +56,15 @@ bool fetchForecastHighLow(String &errorOut) {
     return false;
   }
 
+  // Ask for an uncompressed JSON body. More importantly, read the complete
+  // response through HTTPClient before handing it to ArduinoJson. Parsing
+  // getStream() directly is fragile when the upstream response uses chunked
+  // transfer encoding and can surface as ArduinoJson InvalidInput on HTTP 200.
+  http.addHeader("Accept", "application/json");
+  http.addHeader("Accept-Encoding", "identity");
+
+  Serial.printf("Forecast request: lat=%.5f lon=%.5f\n", wx.latitude, wx.longitude);
+
   int code = http.GET();
   lastForecastHttpCode = code;
   if (code != HTTP_CODE_OK) {
@@ -71,11 +80,26 @@ bool fetchForecastHighLow(String &errorOut) {
     return false;
   }
 
-  DynamicJsonDocument doc(4096);
-  DeserializationError jsonErr = deserializeJson(doc, http.getStream());
+  String body = http.getString();
   http.end();
+  body.trim();
+  if (!body.length()) {
+    errorOut = "Forecast returned an empty response body";
+    return false;
+  }
+
+  DynamicJsonDocument doc(4096);
+  DeserializationError jsonErr = deserializeJson(doc, body);
   if (jsonErr) {
+    String preview = body;
+    preview.replace("\r", " ");
+    preview.replace("\n", " ");
+    if (preview.length() > 120) preview = preview.substring(0, 120);
     errorOut = "Forecast JSON error: " + String(jsonErr.c_str());
+    if (preview.length()) {
+      errorOut += " body=";
+      errorOut += preview;
+    }
     return false;
   }
 
@@ -128,12 +152,24 @@ bool pollForecastIfDue(bool forceRedraw) {
                                       : FORECAST_RETRY_SECONDS;
   const unsigned long intervalMs = intervalSeconds * 1000UL;
 
-  if (!locationChanged && lastForecastPollMs != 0 &&
-      nowMs - lastForecastPollMs < intervalMs) {
-    return wx.forecastValid;
+  // A coordinate change may trigger an immediate forecast attempt, but a
+  // failed first attempt must still obey FORECAST_RETRY_SECONDS. Previously
+  // lastForecastLatitude/Longitude were only stored after success, leaving
+  // locationChanged=true forever and causing a retry every second.
+  if (lastForecastPollMs != 0) {
+    const unsigned long elapsedMs = nowMs - lastForecastPollMs;
+    if (!locationChanged && elapsedMs < intervalMs) {
+      return wx.forecastValid;
+    }
+    if (locationChanged && elapsedMs < FORECAST_RETRY_SECONDS * 1000UL) {
+      return wx.forecastValid;
+    }
   }
 
   lastForecastPollMs = nowMs;
+  lastForecastLatitude = wx.latitude;
+  lastForecastLongitude = wx.longitude;
+
   String error;
   if (!fetchForecastHighLow(error)) {
     lastForecastError = error;
@@ -142,8 +178,6 @@ bool pollForecastIfDue(bool forceRedraw) {
   }
 
   lastForecastError = "";
-  lastForecastLatitude = wx.latitude;
-  lastForecastLongitude = wx.longitude;
   if (forceRedraw) drawForecastHighLowCard();
   return true;
 }
