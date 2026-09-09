@@ -47,6 +47,13 @@ class Waveshare7CBoxTests(unittest.TestCase):
         self.assertIn('WAITING', svg)
         self.assertIn('OFFLINE', svg)
 
+    def test_apparent_temperature_unit_spacing_matches_firmware(self):
+        from emulator.display_ui import _apparent_parts_7c
+        svg = _apparent_parts_7c(100)
+        self.assertIn('x="231.0"', svg)
+        self.assertIn('cx="374.0" cy="150" r="4"', svg)
+        self.assertIn('x="383.0" y="179"', svg)
+
     def test_controller_exposes_renderer(self):
         svg = self.app.render_waveshare_7c()
         self.assertIn('viewBox="0 0 800 480"', svg)

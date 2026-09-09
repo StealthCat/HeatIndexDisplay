@@ -193,10 +193,13 @@ static void drawApparentTemperature(float apparentF) {
   gfx->getTextBounds(value, 0, 0, &x1, &y1, &numberW, &numberH);
   setText(C_WHITE, unitSize);
   uint16_t fW, fH; gfx->getTextBounds("F", 0, 0, &x1, &y1, &fW, &fH);
-  const int groupW = (int)numberW + 18 + (int)fW;
+  // Arduino_GFX text bounds include the final character-cell spacing. Pull the
+  // degree/F unit into that trailing space so the temperature reads as one
+  // compact value instead of leaving a large visual gap after the digits.
+  const int groupW = (int)numberW + 10 + (int)fW;
   const int startX = centerX - groupW / 2;
   printBoldAt(startX, topY, value, C_WHITE, numberSize);
-  const int unitX = startX + (int)numberW + 4;
+  const int unitX = startX + (int)numberW - 4;
   gfx->drawCircle(unitX + 3, topY + 7, 4, C_WHITE);
   printBoldAt(unitX + 12, topY + 20, "F", C_WHITE, unitSize);
 }

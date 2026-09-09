@@ -546,10 +546,12 @@ def _apparent_parts_7c(value):
     text_size = 8 if len(value_s) >= 3 else 9
     number_font = text_size * 8
     number_w = len(value_s) * 6 * text_size
-    group_w = number_w + 18 + 24
+    # Match the production display: use the trailing character-cell spacing
+    # after the final digit to tuck the degree/F unit closer to the number.
+    group_w = number_w + 10 + 24
     start_x = 320 - group_w / 2
-    degree_x = start_x + number_w + 7
-    f_x = start_x + number_w + 16
+    degree_x = start_x + number_w - 1
+    f_x = start_x + number_w + 8
     return "".join([
         text(start_x, 143 + number_font / 2, value_s, number_font, "start", WHITE, "900"),
         f'<circle cx="{degree_x}" cy="150" r="4" fill="none" stroke="{WHITE}" stroke-width="1.5"/>',

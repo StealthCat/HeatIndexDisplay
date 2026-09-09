@@ -9,7 +9,7 @@
     "emulator/app_controller.py": "acdf5bb5c7b5b79956bda7cb6778937ea272ebb21151c02af6bc8ff5e77cc77e",
     "emulator/app_state.py": "320e12662ebd8b190ec253397d0c20df4d5a34b27a1662285c3cac65c9b29142",
     "emulator/config_store.py": "9d2901df210fcbd4cb3709259b7288b8e810edba5e0995782f0bec7c05dcf6f1",
-    "emulator/display_ui.py": "b52ad946263d1b33100856ea5fffa62fb964dd748b0a317cec8983a81a90faf8",
+    "emulator/display_ui.py": "1fc7cf807b8347cda19997e6fb85f05fa372934a4e189b1a0db990d5898f1085",
     "emulator/forecast_weather.py": "73541e39563e87bec5c9c21f6c1a1e0b3b9b8e91bd88caccdf9daeb4592b1b56",
     "emulator/weather_math.py": "993b193608b6db8decf8d59dc099b6a4af4d2038101aade0f5c0956f44cc808c",
     "emulator/weather_source.py": "df4a1d65311b48c4c8881bbe39cc1b9acadef8a0d861a06af34b70edc9ca0cc4",
@@ -34,7 +34,7 @@
     "tests/test_firmware_visual_parity.py": "7b0cc09c8530c7787210880ebb78ec0b8311a8823fa7009117d6e41c63b39e9f",
     "tests/test_forecast_v79.py": "80e3f1b10290b904e59b264c99421d2f4579f9f68453b872304c14df9748afbb",
     "tests/test_provider_rest_summary.py": "500390b16e6277349c29ac6ea168e0aa818bd6f878ffd07940374c59994938fd",
-    "tests/test_waveshare_7c_box.py": "a55e28e9d94a3d1b93cc8b5fb2704a8005dfca4bb82c8a59f950a9d4302ef2d3",
+    "tests/test_waveshare_7c_box.py": "23e41765c04d23b43fcd56d3a2395e23260c758e345fc76bb1a4975a95f458ce",
     "tests/test_weather_math.py": "ec6c93e12f7f747da39ef9b4d93c9e67ad6827ca4346b8b70dcd35ab734c9927",
     "tests/test_stale_semantics.py": "39e08cd2947b5cef0cd45117c223f713a4f1de813fc5afb9bc97f73b2238b76f"
   },
@@ -46,7 +46,7 @@
     "T-Display-S3/src/weather_math.cpp": "70e550b28f81d6cc42150ecf3f5d682d966186fbfc1289650ba8d1d056c53512",
     "T-Display-S3/src/wunderground_weather.cpp": "54b7ccd8fdabd6dc330617aff0ca2b238f33f4a536e51ff09d2982f7a38d12e7",
     "Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp": "f41f933b72a2f0c8485568cb5846521e2eaf46f40271ec6d1f6142a0409176bc",
-    "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp": "8c5077bfe56bb34c42fb9067f9fab89452924329ce32c92a396ef6bf0d0bbcf6",
+    "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp": "90e9dc17fb0c0332301ea597065a409dc84f78d19472242e854c4b22b1c6d5a5",
     "T-Display-S3/src/time_utils.cpp": "f9e85e69230cef71114927d13090412bff697050ebd0f8b70b82dba30c2b9a9c",
     "Waveshare-ESP32-S3-Touch-LCD-2.8/src/time_utils.cpp": "f9e85e69230cef71114927d13090412bff697050ebd0f8b70b82dba30c2b9a9c",
     "Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/time_utils.cpp": "f9e85e69230cef71114927d13090412bff697050ebd0f8b70b82dba30c2b9a9c"
