@@ -1,0 +1,42 @@
+name: Cleanup stale fix artifacts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-stale-fix-artifacts.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Remove generated files and prevent recurrence
+        shell: bash
+        run: |
+          rm -rf emulator/concept-1/emulator/__pycache__
+          rm -rf emulator/concept-1/tests/__pycache__
+          rm -f emulator/concept-1/emulator_config.json
+          rm -f .github/workflows/cleanup-stale-fix-artifacts.yml
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.gitignore')
+          text = p.read_text(encoding='utf-8')
+          additions = ['__pycache__/', '*.pyc', 'emulator/concept-1/emulator_config.json']
+          lines = text.splitlines()
+          for item in additions:
+              if item not in lines:
+                  lines.append(item)
+          p.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Clean generated emulator test artifacts"
+          git push origin HEAD:main
