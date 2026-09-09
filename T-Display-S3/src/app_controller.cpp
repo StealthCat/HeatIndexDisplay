@@ -12,8 +12,10 @@
 
 void appSetup() {
   loadConfig();
-  startWebServer();
 
+  // Bring the HTTP listener up only after a network interface exists. Starting
+  // it before STA/AP initialization made recovery less deterministic on the
+  // ESP32-S3 and provided no reachable interface anyway.
   if (!cfg.ssid.length()) {
     startSetupAp();
     return;
@@ -43,13 +45,13 @@ void appLoop() {
   const unsigned long nowMs = millis();
 
   if (WiFi.status() != WL_CONNECTED) {
-    if (!cfg.ssid.length()) {
-      if (!setupApStarted) {
-        startSetupAp();
-      }
+    if (setupApStarted) {
+      // Dedicated failsafe AP mode is intentionally stable. Do not start STA
+      // attempts in the background; saving configuration reboots the device.
+    } else if (!cfg.ssid.length()) {
+      startSetupAp();
     } else if (nowMs - lastWifiAttemptMs >= WIFI_RETRY_SECONDS * 1000UL) {
-      lastWifiAttemptMs = nowMs;
-      if (!connectWifi() && !setupApStarted) {
+      if (!connectWifi()) {
         startSetupAp();
       }
     }

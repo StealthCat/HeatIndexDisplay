@@ -35,17 +35,19 @@ String setupApName() {
 void startSetupAp() {
   if (setupApStarted) return;
 
-  // A failed STA association can still be active when we enter fallback
-  // setup mode. Stop only the STA attempt (do not erase credentials), then
-  // give the ESP32 Wi-Fi stack a moment to settle before enabling AP+STA.
-  WiFi.disconnect(false, false);
-  delay(100);
+  Serial.println("Entering dedicated setup AP mode");
 
-  if (!WiFi.mode(WIFI_AP_STA)) {
-    Serial.println("Failed to enter WIFI_AP_STA mode for setup AP");
-    startWebServer();
-    // The waiting screen is already present. Updating only the footer avoids
-    // a full-screen black flash if the radio transition itself fails.
+  // Failsafe setup mode must be stable and independent of a failing station
+  // association. Completely stop STA/reconnect activity before starting a
+  // dedicated AP. Stored application credentials live in Preferences and are
+  // not erased by this radio reset.
+  WiFi.setAutoReconnect(false);
+  WiFi.softAPdisconnect(true);
+  WiFi.disconnect(true, false);
+  delay(250);
+
+  if (!WiFi.mode(WIFI_AP)) {
+    Serial.println("Failed to enter WIFI_AP mode for setup AP");
     drawFooter();
     return;
   }
@@ -54,25 +56,25 @@ void startSetupAp() {
   String name = setupApName();
   bool started = false;
   for (uint8_t attempt = 1; attempt <= 3 && !started; ++attempt) {
-    started = WiFi.softAP(name.c_str());
+    started = WiFi.softAP(name.c_str(), nullptr, 1, 0, 4);
     if (!started) {
       Serial.printf("Setup AP start attempt %u failed\n", attempt);
-      delay(250);
+      delay(300);
     }
   }
 
-  startWebServer();
-
   if (!started) {
-    Serial.println("Setup AP failed after 3 attempts; leaving waiting screen intact");
-    // Do not call drawWaitingScreen() here. The retry loop may reach this
-    // path repeatedly, and clearing/repainting the whole TFT caused the
-    // visible black flashing reported on the T-Display S3.
+    Serial.println("Setup AP failed after 3 attempts; waiting screen left intact");
     drawFooter();
     return;
   }
 
   setupApStarted = true;
+  startWebServer();
+  // Re-issue begin in case the WebServer socket existed on a previous network
+  // interface before the Wi-Fi stack was reset.
+  server.begin();
+
   Serial.print("Setup AP: ");
   Serial.println(name);
   Serial.print("Setup IP: ");
@@ -83,20 +85,27 @@ void startSetupAp() {
 bool connectWifi() {
   if (!cfg.ssid.length()) return false;
 
-  // Record the attempt here as well as in appLoop so the initial boot failure
-  // does not immediately launch a second 20-second association attempt.
-  lastWifiAttemptMs = millis();
-
-  // Clear any stale/pending station association without touching the setup AP
-  // or erasing saved credentials. This is especially important after a timed
-  // out connection attempt on Arduino-ESP32 2.x used by the T-Display build.
-  WiFi.disconnect(false, false);
-  delay(100);
-
-  if (!WiFi.mode(setupApStarted ? WIFI_AP_STA : WIFI_STA)) {
-    Serial.println("Failed to set Wi-Fi mode before station connection");
+  // Once the dedicated fallback AP is running, leave it alone. Configuration
+  // changes reboot the device, which is the deliberate transition back to STA.
+  if (setupApStarted) {
+    Serial.println("Setup AP active; suppressing station reconnect attempt");
     return false;
   }
+
+  lastWifiAttemptMs = millis();
+
+  // Start each station attempt from a known radio state. This avoids carrying
+  // a timed-out ESP32-S3 association into the next connection attempt.
+  WiFi.setAutoReconnect(false);
+  WiFi.softAPdisconnect(true);
+  WiFi.disconnect(true, false);
+  delay(250);
+
+  if (!WiFi.mode(WIFI_STA)) {
+    Serial.println("Failed to enter WIFI_STA mode");
+    return false;
+  }
+  delay(100);
 
   WiFi.setHostname(cfg.hostname.c_str());
   WiFi.setAutoReconnect(true);
@@ -114,24 +123,19 @@ bool connectWifi() {
     Serial.println(WiFi.localIP());
     configTzTime(cfg.timezoneTz.c_str(), "pool.ntp.org", "time.nist.gov");
     startWebServer();
-
-    const bool wasSetupAp = setupApStarted;
-    if (setupApStarted) {
-      WiFi.softAPdisconnect(true);
-      setupApStarted = false;
-      WiFi.mode(WIFI_STA);
-    }
-
-    // On an ordinary reconnect the middle waiting card is already on screen,
-    // so only the footer needs refreshing. If we are leaving setup mode, a
-    // one-time full redraw is appropriate to replace SETUP with WAITING.
-    if (wasSetupAp) drawWaitingScreen();
-    else drawFooter();
+    server.begin();
+    drawFooter();
     return true;
   }
 
   wl_status_t status = WiFi.status();
   Serial.printf("Wi-Fi connection timed out: %s (%d)\n",
                 wifiStatusLabel(status), (int)status);
+
+  // Power the failed STA interface down before the caller enters failsafe AP
+  // mode. This also prevents background auto-reconnect from fighting the AP.
+  WiFi.setAutoReconnect(false);
+  WiFi.disconnect(true, false);
+  delay(100);
   return false;
 }
