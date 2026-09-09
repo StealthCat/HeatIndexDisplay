@@ -17,7 +17,11 @@ uint32_t observationAgeSeconds() {
 }
 
 bool dataStale() {
-  return wx.valid && observationAgeSeconds() > cfg.staleSeconds;
+  // STALE reflects failure to receive a successful API update, not the
+  // provider station's observation timestamp. Some PWS/cloud feeds
+  // legitimately publish observations several minutes behind real time.
+  if (!wx.valid || wx.fetchedMs == 0) return false;
+  return ((millis() - wx.fetchedMs) / 1000UL) > cfg.staleSeconds;
 }
 
 String formatClockFromEpoch(time_t t) {

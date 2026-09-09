@@ -103,10 +103,12 @@ def _updated_text(wx: WeatherData):
     return dt.strftime("%I:%M %p").lstrip("0")
 
 def is_stale(cfg: AppConfig, wx: WeatherData):
+    # Match firmware: stale means no successful fetch within the stale
+    # interval. Provider observation timestamps can legitimately lag.
     return bool(
         wx.valid
-        and wx.date_utc_ms
-        and ((time.time() * 1000 - wx.date_utc_ms) > cfg.stale_seconds * 1000)
+        and wx.fetched_monotonic
+        and ((time.monotonic() - wx.fetched_monotonic) > cfg.stale_seconds)
     )
 
 def icon(kind, x, y, scale=1.0):

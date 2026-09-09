@@ -1,0 +1,15 @@
+{
+  "weather_source": "ambient",
+  "station_name": "Cronin Farm",
+  "data_mode": "preset",
+  "preset_name": "wind",
+  "ambient_application_key": "",
+  "ambient_api_key": "",
+  "ambient_mac_address": "",
+  "wu_api_key": "",
+  "wu_station_id": "",
+  "poll_seconds": 60,
+  "stale_seconds": 180,
+  "host": "127.0.0.1",
+  "port": 8765
+}
