@@ -3,3 +3,6 @@
 *.bin
 *.elf
 *.map
+__pycache__/
+*.pyc
+emulator/concept-1/emulator_config.json
