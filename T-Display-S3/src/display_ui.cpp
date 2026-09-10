@@ -79,6 +79,11 @@ WS5000_TDisplayS3 display;
 static const uint16_t C_BLACK = 0x0000;
 static const uint16_t C_WHITE = 0xFFFF;
 
+// The t-display branch uses two runtime pages. The full-screen apparent
+// temperature page is the default; either physical button toggles details.
+static bool detailsPageActive = false;
+static bool waitingScreenActive = true;
+
 static uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
   return display.color565(r, g, b);
 }
@@ -291,23 +296,42 @@ static void drawApparentTemperature(float apparentF) {
   }
 }
 
+static void drawDetailMetricCard(int x, int y, int w, int h,
+                                 const String &label, const String &value) {
+  const uint16_t cyan = rgb565(114, 202, 255);
+  drawConceptCard(x, y, w, h, 8, false);
+
+  display.setTextDatum(textdatum_t::middle_center);
+  display.setFont(&fonts::Font0);
+  display.setTextSize(0.72f);
+  drawBoldText(label, x + w / 2, y + 11, cyan);
+  display.setTextSize(1.0f);
+
+  if (value.length() > 7) {
+    display.setFont(&fonts::Font2);
+  } else {
+    display.setFont(&fonts::Font4);
+  }
+  drawBoldText(value, x + w / 2, y + 34, C_WHITE);
+}
+
 void drawForecastHighLowCard() {
+  if (waitingScreenActive || !detailsPageActive || !wx.valid) return;
+
   const uint16_t muted = rgb565(157, 200, 228);
   const bool tomorrow = forecastShowsTomorrow();
+  drawConceptCard(6, 212, 158, 48, 8, true);
 
-  drawConceptCard(7, 252, 156, 35, 7, true);
-  drawSunIcon(23, 269, rgb565(255, 193, 43));
-
-  display.setTextDatum(textdatum_t::middle_left);
+  display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.80f);
-  drawBoldText(tomorrow ? "TOMORROW HIGH / LOW" : "TODAY HIGH / LOW", 40, 260, muted);
+  display.setTextSize(0.72f);
+  drawBoldText(tomorrow ? "TOMORROW HIGH / LOW" : "TODAY HIGH / LOW", 85, 224, muted);
   display.setTextSize(1.0f);
 
   String hl = "-- / --";
   if (wx.forecastValid) {
-    float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
-    float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
+    const float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
+    const float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
     if (isfinite(high) && isfinite(low)) {
       hl = String((int)lroundf(high)) + String("\xB0") + " / " +
            String((int)lroundf(low)) + String("\xB0");
@@ -315,7 +339,7 @@ void drawForecastHighLowCard() {
   }
 
   display.setFont(&fonts::Font4);
-  drawBoldText(hl, 40, 276, C_WHITE);
+  drawBoldText(hl, 85, 244, C_WHITE);
 }
 
 void drawHeader() {
@@ -348,7 +372,85 @@ void drawHeader() {
   display.drawFastHLine(8, 34, 12, rgb565(126, 200, 232));
 }
 
+static void drawHeroStatusCard() {
+  const uint16_t muted = rgb565(191, 215, 229);
+  const uint16_t green = rgb565(117, 237, 79);
+  const uint16_t red = rgb565(255, 122, 103);
+
+  drawConceptCard(7, 269, 156, 44, 9, true);
+  display.setTextDatum(textdatum_t::middle_center);
+  display.setFont(&fonts::Font0);
+  display.setTextSize(0.68f);
+
+  String line1;
+  String line2;
+  uint16_t stateColor = green;
+  if (WiFi.status() != WL_CONNECTED) {
+    line1 = setupApStarted ? "SETUP 192.168.4.1" : "WI-FI DISCONNECTED";
+    line2 = "OFFLINE";
+    stateColor = red;
+  } else if (!apiConfigured()) {
+    line1 = "API SETUP NEEDED";
+    line2 = "OFFLINE";
+    stateColor = red;
+  } else {
+    line1 = "UPDATED " + updateClockText();
+    line2 = dataStale() ? "STALE" : "ONLINE";
+    stateColor = dataStale() ? red : green;
+  }
+
+  display.setTextColor(C_WHITE);
+  display.drawString(line1, 85, 279);
+  drawBoldText(line2, 85, 292, stateColor);
+  display.setTextSize(0.58f);
+  display.setTextColor(muted);
+  display.drawString("EITHER BUTTON: DETAILS", 85, 305);
+  display.setTextSize(1.0f);
+}
+
+static void drawDetailsStatusCard() {
+  const uint16_t muted = rgb565(168, 198, 216);
+  const uint16_t green = rgb565(117, 237, 79);
+  const uint16_t red = rgb565(255, 122, 103);
+
+  drawConceptCard(6, 264, 158, 50, 8, true);
+  display.setTextDatum(textdatum_t::middle_center);
+  display.setFont(&fonts::Font0);
+  display.setTextSize(0.66f);
+
+  String line1;
+  String state;
+  uint16_t stateColor = green;
+  if (WiFi.status() != WL_CONNECTED) {
+    line1 = "WI-FI DISCONNECTED";
+    state = "OFFLINE";
+    stateColor = red;
+  } else if (!apiConfigured()) {
+    line1 = "API SETUP NEEDED";
+    state = "OFFLINE";
+    stateColor = red;
+  } else {
+    line1 = "UPDATED " + updateClockText();
+    state = dataStale() ? "STALE" : "ONLINE";
+    stateColor = dataStale() ? red : green;
+  }
+
+  display.setTextColor(C_WHITE);
+  display.drawString(line1, 85, 276);
+  drawBoldText(state, 85, 290, stateColor);
+  display.setTextSize(0.56f);
+  display.setTextColor(muted);
+  display.drawString("EITHER BUTTON: HEAT INDEX", 85, 305);
+  display.setTextSize(1.0f);
+}
+
 void drawFooter() {
+  if (!waitingScreenActive && wx.valid) {
+    if (detailsPageActive) drawDetailsStatusCard();
+    else drawHeroStatusCard();
+    return;
+  }
+
   const uint16_t muted = rgb565(168, 198, 216);
   const uint16_t green = rgb565(117, 237, 79);
   const uint16_t red = rgb565(255, 122, 103);
@@ -392,7 +494,6 @@ void drawFooter() {
     leftColor = stale ? red : C_WHITE;
   }
 
-  // LILYGO is the visual reference: 4 px from dot edge to label.
   display.setTextDatum(textdatum_t::middle_left);
   display.setTextSize(0.62f);
   display.setTextColor(leftColor);
@@ -406,6 +507,7 @@ void drawFooter() {
 
 
 void drawWaitingScreen() {
+  waitingScreenActive = true;
   display.fillScreen(C_BLACK);
   drawHeader();
 
@@ -446,70 +548,135 @@ void drawWaitingScreen() {
   drawFooter();
 }
 
-void drawWeatherScreen() {
-  display.fillScreen(C_BLACK);
-  drawHeader();
+static void drawFullScreenApparentValue(float apparentF) {
+  const String value = String((int)lroundf(apparentF));
+  const float valueScale = value.length() >= 3 ? 1.0f : 1.20f;
 
-  const uint16_t cyan = rgb565(114, 202, 255);
-  const uint16_t green = rgb565(123, 220, 71);
+  display.setTextDatum(textdatum_t::middle_left);
+  display.setTextColor(C_WHITE);
+  display.setFont(&fonts::Font7);
+  display.setTextSize(valueScale);
+  const int valueWidth = display.textWidth(value);
 
-  float apparentF = apparentOutdoorF();
-  RiskStyle risk = riskFor(apparentF);
+  display.setFont(&fonts::Font4);
+  display.setTextSize(1.0f);
+  const int fWidth = display.textWidth("F");
+  const int unitGap = 13;
+  const int groupWidth = valueWidth + unitGap + fWidth;
+  const int startX = (170 - groupWidth) / 2;
+
+  display.setFont(&fonts::Font7);
+  display.setTextSize(valueScale);
+  display.drawString(value, startX, 150);
+
+  const int degreeX = startX + valueWidth + 4;
+  display.drawCircle(degreeX + 2, 132, 3, C_WHITE);
+  display.setFont(&fonts::Font4);
+  display.setTextSize(1.0f);
+  display.drawString("F", degreeX + 8, 151);
+}
+
+static void drawFullScreenHero() {
+  const float apparentF = apparentOutdoorF();
+  const RiskStyle risk = riskFor(apparentF);
   const bool cold = windChillApplies();
 
-  // Concept 1 hero panel. Heat Index follows the NWS-inspired HeatRisk
-  // progression; Wind Chill follows the NWS frostbite-time chart colors.
-  fillGradientRoundRect(8, 43, 154, 101, 11, risk.panelTop, risk.panelBottom);
-  display.drawRoundRect(8, 43, 154, 101, 11, risk.border);
+  for (int y = 0; y < 320; ++y) {
+    const float t = (float)y / 319.0f;
+    display.drawFastHLine(0, y, 170, lerp565(risk.panelTop, risk.panelBottom, t));
+  }
 
-  if (cold) drawHeroWind(18, 82);
-  else drawHeroSun(32, 88);
+  String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
+  if (station.length() > 20) station = station.substring(0, 20);
+  display.setTextDatum(textdatum_t::middle_center);
+  display.setTextColor(C_WHITE);
+  display.setFont(&fonts::Font2);
+  drawBoldText(station, 85, 17, C_WHITE);
 
+  display.setFont(&fonts::Font0);
+  display.setTextSize(0.68f);
+  display.setTextColor(rgb565(222, 235, 243));
+  display.drawString(currentDateText(), 85, 36);
+  display.setTextSize(1.0f);
+
+  display.setFont(&fonts::Font4);
+  drawBoldText(apparentTitle(), 85, 67, C_WHITE);
+
+  if (cold) drawHeroWind(66, 91);
+  else drawHeroSun(85, 94);
+
+  drawFullScreenApparentValue(apparentF);
+
+  display.fillRoundRect(14, 207, 142, 38, 19, risk.status);
+  display.drawRoundRect(14, 207, 142, 38, 19, risk.accent);
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font2);
-  drawBoldText(apparentTitle(), 117, 61, C_WHITE);
-  drawApparentTemperature(apparentF);
+  drawBoldText(apparentRiskLabel(), 85, 226, risk.accent);
 
-  display.fillRoundRect(16, 116, 138, 20, 10, risk.status);
-  display.drawRoundRect(16, 116, 138, 20, 10, risk.accent);
+  drawHeroStatusCard();
+}
+
+static void drawDetailsScreen() {
+  const uint16_t muted = rgb565(157, 200, 228);
+  display.fillScreen(C_BLACK);
+
+  drawConceptCard(6, 6, 158, 34, 8, true);
+  display.setTextDatum(textdatum_t::middle_center);
+  display.setFont(&fonts::Font2);
+  drawBoldText("WEATHER DETAILS", 85, 16, C_WHITE);
   display.setFont(&fonts::Font0);
-  drawBoldText(apparentRiskLabel(), 85, 126, risk.accent);
+  display.setTextSize(0.58f);
+  display.setTextColor(muted);
+  String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
+  if (station.length() > 22) station = station.substring(0, 22);
+  display.drawString(station, 85, 31);
+  display.setTextSize(1.0f);
 
-  // Metric cards: icon left, label above value.
-  drawMetricCard(7, 149, 77, 31);
-  drawThermometer(12, 155, rgb565(255, 92, 75));
-  drawMetricLabelValue(31, 158, "TEMPERATURE", String(wx.tempF, 1) + String("\xB0") + "F");
+  const String temp = isfinite(wx.tempF) ? String(wx.tempF, 1) + String("\xB0") + "F" : "--";
+  const String humidity = isfinite(wx.humidity) ? String((int)lroundf(wx.humidity)) + "%" : "--";
+  const String dew = isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String("\xB0") + "F" : "--";
+  const String delta = signedTempDelta(wx.fromYesterdayF);
 
-  drawMetricCard(87, 149, 76, 31);
-  drawDrop(99, 155, rgb565(72, 186, 255));
-  drawMetricLabelValue(112, 158, "HUMIDITY", String((int)lroundf(wx.humidity)) + "%");
+  String wind = isfinite(wx.windMph) ? String(wx.windMph, 1) : "--";
+  wind += " / ";
+  wind += isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--";
 
-  drawMetricCard(7, 183, 77, 31);
-  drawLeafIcon(19, 198, green);
-  drawMetricLabelValue(31, 192, "DEW POINT",
-    isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String("\xB0") + "F" : "--");
-
-  drawMetricCard(87, 183, 76, 31);
-  drawTrendIcon(93, 189, cyan);
-  drawMetricLabelValue(112, 192, "VS YDAY", signedTempDelta(wx.fromYesterdayF));
-
-  drawMetricCard(7, 217, 77, 31);
-  drawWindIcon(12, 226, cyan);
-  String windLine = isfinite(wx.windMph) ? String(wx.windMph, 1) : "--";
-  windLine += " / ";
-  windLine += isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--";
-  drawMetricLabelValue(31, 226, "W/G MPH", windLine);
-
-  drawMetricCard(87, 217, 76, 31);
-  drawCompassIcon(99, 233, cyan);
-  String dirLine = "--";
+  String direction = "--";
   if (isfinite(wx.windDirDeg)) {
-    dirLine = String((int)lroundf(wx.windDirDeg)) + String("\xB0") + " " + directionText(wx.windDirDeg);
+    direction = String((int)lroundf(wx.windDirDeg)) + String("\xB0") + " " + directionText(wx.windDirDeg);
   }
-  drawMetricLabelValue(112, 226, "DIR", dirLine);
+
+  drawDetailMetricCard(6, 44, 78, 52, "TEMPERATURE", temp);
+  drawDetailMetricCard(87, 44, 77, 52, "HUMIDITY", humidity);
+  drawDetailMetricCard(6, 100, 78, 52, "DEW POINT", dew);
+  drawDetailMetricCard(87, 100, 77, 52, "VS YDAY", delta);
+  drawDetailMetricCard(6, 156, 78, 52, "WIND / GUST", wind);
+  drawDetailMetricCard(87, 156, 77, 52, "DIRECTION", direction);
 
   drawForecastHighLowCard();
-  drawFooter();
+  drawDetailsStatusCard();
+}
+
+void drawWeatherScreen() {
+  if (!wx.valid) {
+    drawWaitingScreen();
+    return;
+  }
+
+  waitingScreenActive = false;
+  if (detailsPageActive) drawDetailsScreen();
+  else drawFullScreenHero();
+}
+
+void toggleDisplayPage() {
+  if (!wx.valid || waitingScreenActive) return;
+  detailsPageActive = !detailsPageActive;
+  Serial.printf("T-Display page: %s\n", detailsPageActive ? "details" : "heat-index");
+  drawWeatherScreen();
+}
+
+bool displayDetailPageActive() {
+  return detailsPageActive;
 }
 
 void displayBegin() {
