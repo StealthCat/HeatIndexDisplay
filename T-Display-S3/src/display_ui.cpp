@@ -298,21 +298,20 @@ static void drawApparentTemperature(float apparentF) {
 
 static void drawLandscapeMetricCard(int x, int y, int w, int h,
                                     const String &label, const String &value) {
-  const uint16_t cyan = rgb565(114, 202, 255);
+  const uint16_t cyan = rgb565(132, 211, 255);
   drawConceptCard(x, y, w, h, 7, false);
 
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font0);
-  display.setTextSize(w <= 52 ? 0.54f : 0.62f);
-  drawBoldText(label, x + w / 2, y + 11, cyan);
+  display.setTextSize(label.length() > 9 ? 0.62f : 0.70f);
+  drawBoldText(label, x + w / 2, y + 10, cyan);
   display.setTextSize(1.0f);
 
-  if (w <= 52 || value.length() > 8) {
+  display.setFont(&fonts::Font4);
+  if (display.textWidth(value) > w - 8) {
     display.setFont(&fonts::Font2);
-  } else {
-    display.setFont(&fonts::Font4);
   }
-  drawBoldText(value, x + w / 2, y + 32, C_WHITE);
+  drawBoldText(value, x + w / 2, y + 33, C_WHITE);
 }
 
 void drawForecastHighLowCard() {
@@ -328,15 +327,15 @@ void drawForecastHighLowCard() {
     if (isfinite(low)) lowText = String((int)lroundf(low)) + String("\xB0");
   }
 
-  drawLandscapeMetricCard(215, 79, 49, 51,
+  drawLandscapeMetricCard(160, 79, 75, 51,
                           tomorrow ? "TMRW HIGH" : "TODAY HIGH", highText);
-  drawLandscapeMetricCard(267, 79, 49, 51,
+  drawLandscapeMetricCard(238, 79, 78, 51,
                           tomorrow ? "TMRW LOW" : "TODAY LOW", lowText);
 }
 
 void drawHeader() {
   String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
-  if (station.length() > 20) station = station.substring(0, 20);
+  if (station.length() > 16) station = station.substring(0, 16);
 
   drawConceptCard(4, 4, 312, 22, 6, true);
   display.setTextDatum(textdatum_t::middle_left);
@@ -345,20 +344,20 @@ void drawHeader() {
 
   display.setTextDatum(textdatum_t::middle_right);
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.68f);
-  display.setTextColor(rgb565(219, 231, 238));
-  display.drawString(currentDateText(), 310, 15);
+  display.setTextSize(0.78f);
+  display.setTextColor(rgb565(231, 241, 247));
+  display.drawString(currentDateText(), 309, 15);
   display.setTextSize(1.0f);
 }
 
 static void drawLandscapeStatusBar(const char *buttonHint) {
-  const uint16_t muted = rgb565(168, 198, 216);
+  const uint16_t muted = rgb565(185, 211, 226);
   const uint16_t green = rgb565(117, 237, 79);
   const uint16_t red = rgb565(255, 122, 103);
-  const uint16_t border = rgb565(23, 78, 108);
+  const uint16_t border = rgb565(28, 91, 124);
 
-  display.fillRect(0, 134, 320, 36, C_BLACK);
-  display.drawFastHLine(4, 135, 312, border);
+  display.fillRect(0, 133, 320, 37, C_BLACK);
+  display.drawFastHLine(4, 134, 312, border);
 
   String left;
   String state;
@@ -388,21 +387,26 @@ static void drawLandscapeStatusBar(const char *buttonHint) {
     stateColor = stale ? red : green;
   }
 
-  drawClockIcon(12, 148, muted);
+  drawClockIcon(13, 147, muted);
   display.setTextDatum(textdatum_t::middle_left);
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.68f);
+  display.setTextSize(0.74f);
   display.setTextColor(C_WHITE);
-  display.drawString(left, 23, 148);
+  display.drawString(left, 25, 147);
 
-  display.setTextDatum(textdatum_t::middle_right);
-  display.fillCircle(267, 148, 2, stateColor);
-  drawBoldText(state, 312, 148, stateColor);
+  // Fixed left-anchored status geometry prevents ONLINE/OFFLINE from
+  // crowding or clipping against the physical right edge.
+  display.fillCircle(267, 147, 2, stateColor);
+  display.setTextDatum(textdatum_t::middle_left);
+  display.setTextSize(0.74f);
+  drawBoldText(state, 274, 147, stateColor);
 
-  display.setTextDatum(textdatum_t::middle_center);
-  display.setTextSize(0.58f);
-  display.setTextColor(muted);
-  display.drawString(buttonHint, 160, 163);
+  if (buttonHint && buttonHint[0]) {
+    display.setTextDatum(textdatum_t::middle_center);
+    display.setTextSize(0.68f);
+    display.setTextColor(muted);
+    display.drawString(buttonHint, 160, 162);
+  }
   display.setTextSize(1.0f);
 }
 
@@ -457,7 +461,7 @@ void drawWaitingScreen() {
 
 static void drawLandscapeApparentValue(float apparentF) {
   const String value = String((int)lroundf(apparentF));
-  const float scale = value.length() >= 3 ? 1.0f : 1.12f;
+  const float scale = value.length() >= 3 ? 0.98f : 1.10f;
 
   display.setTextColor(C_WHITE);
   display.setTextDatum(textdatum_t::middle_left);
@@ -468,18 +472,18 @@ static void drawLandscapeApparentValue(float apparentF) {
   display.setFont(&fonts::Font4);
   display.setTextSize(1.0f);
   const int fWidth = display.textWidth("F");
-  const int groupWidth = valueWidth + 17 + fWidth;
-  const int startX = 54 + (126 - groupWidth) / 2;
+  const int groupWidth = valueWidth + 13 + fWidth;
+  const int startX = 47 + (130 - groupWidth) / 2;
 
   display.setFont(&fonts::Font7);
   display.setTextSize(scale);
-  display.drawString(value, startX, 90);
+  display.drawString(value, startX, 88);
 
-  const int degreeX = startX + valueWidth + 3;
-  display.drawCircle(degreeX + 2, 71, 3, C_WHITE);
+  const int degreeX = startX + valueWidth + 2;
+  display.drawCircle(degreeX + 2, 69, 3, C_WHITE);
   display.setFont(&fonts::Font4);
   display.setTextSize(1.0f);
-  display.drawString("F", degreeX + 9, 92);
+  display.drawString("F", degreeX + 8, 90);
 }
 
 static void drawFullScreenHero() {
@@ -493,44 +497,51 @@ static void drawFullScreenHero() {
   }
 
   String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
-  if (station.length() > 19) station = station.substring(0, 19);
+  if (station.length() > 16) station = station.substring(0, 16);
   display.setTextDatum(textdatum_t::middle_left);
   display.setFont(&fonts::Font2);
   drawBoldText(station, 9, 14, C_WHITE);
 
   display.setTextDatum(textdatum_t::middle_right);
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.68f);
-  display.setTextColor(rgb565(235, 242, 247));
-  display.drawString(currentDateText(), 311, 14);
+  display.setTextSize(0.78f);
+  display.setTextColor(rgb565(241, 247, 250));
+  display.drawString(currentDateText(), 310, 14);
   display.setTextSize(1.0f);
   display.drawFastHLine(8, 27, 304, risk.accent);
 
+  // Clear visual split: value on the left, risk/status on the right.
+  display.drawFastVLine(180, 35, 91, lerp565(risk.accent, C_WHITE, 0.30f));
+
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font2);
-  drawBoldText(apparentTitle(), 117, 43, C_WHITE);
+  drawBoldText(apparentTitle(), 112, 42, C_WHITE);
 
-  if (cold) drawHeroWind(14, 78);
-  else drawHeroSun(25, 88);
+  if (cold) drawHeroWind(14, 76);
+  else drawHeroSun(24, 84);
   drawLandscapeApparentValue(apparentF);
 
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.62f);
-  display.setTextColor(rgb565(235, 242, 247));
-  display.drawString("CURRENT RISK", 246, 43);
+  display.setTextSize(0.72f);
+  display.setTextColor(rgb565(245, 249, 252));
+  display.drawString("CURRENT RISK", 249, 41);
   display.setTextSize(1.0f);
 
-  display.fillRoundRect(188, 53, 116, 31, 15, risk.status);
-  display.drawRoundRect(188, 53, 116, 31, 15, risk.accent);
-  display.setFont(&fonts::Font2);
-  drawBoldText(apparentRiskLabel(), 246, 69, risk.accent);
+  display.fillRoundRect(188, 52, 124, 37, 18, risk.status);
+  display.drawRoundRect(188, 52, 124, 37, 18, risk.accent);
+  display.setFont(&fonts::Font4);
+  String riskLabel = apparentRiskLabel();
+  if (display.textWidth(riskLabel) > 112) {
+    display.setFont(&fonts::Font2);
+  }
+  drawBoldText(riskLabel, 250, 70, risk.accent);
 
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.66f);
-  display.setTextColor(rgb565(235, 242, 247));
-  display.drawString(cold ? "APPARENT COLD" : "APPARENT HEAT", 246, 98);
-  display.setTextSize(0.58f);
-  display.drawString("LIVE STATION CONDITIONS", 246, 113);
+  display.setTextSize(0.78f);
+  display.setTextColor(rgb565(245, 249, 252));
+  display.drawString(cold ? "APPARENT COLD" : "APPARENT HEAT", 250, 103);
+  display.setTextSize(0.72f);
+  display.drawString("LIVE CONDITIONS", 250, 119);
   display.setTextSize(1.0f);
 
   drawLandscapeStatusBar("EITHER BUTTON: DETAILS");
@@ -549,7 +560,7 @@ static void drawDetailsScreen() {
   const String delta = signedTempDelta(wx.fromYesterdayF);
 
   String wind = isfinite(wx.windMph) ? String(wx.windMph, 1) : "--";
-  wind += " / ";
+  wind += "/";
   wind += isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--";
 
   String direction = "--";
@@ -558,13 +569,14 @@ static void drawDetailsScreen() {
       String((int)lroundf(wx.windDirDeg)) + String("\xB0");
   }
 
-  drawLandscapeMetricCard(4, 28, 75, 48, "TEMPERATURE", temp);
+  // Two balanced rows of four cards maximize readable type at 320x170.
+  drawLandscapeMetricCard(4, 28, 75, 48, "TEMP", temp);
   drawLandscapeMetricCard(82, 28, 75, 48, "HUMIDITY", humidity);
   drawLandscapeMetricCard(160, 28, 75, 48, "DEW POINT", dew);
   drawLandscapeMetricCard(238, 28, 78, 48, "VS YDAY", delta);
 
-  drawLandscapeMetricCard(4, 79, 117, 51, "WIND / GUST MPH", wind);
-  drawLandscapeMetricCard(124, 79, 88, 51, "DIRECTION", direction);
+  drawLandscapeMetricCard(4, 79, 75, 51, "WIND/GUST", wind);
+  drawLandscapeMetricCard(82, 79, 75, 51, "DIRECTION", direction);
   drawForecastHighLowCard();
 
   drawLandscapeStatusBar("EITHER BUTTON: HEAT INDEX");
