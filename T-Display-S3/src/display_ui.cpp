@@ -515,15 +515,16 @@ static void drawFullScreenHero() {
   else drawHeroSun(24, 84);
   drawLandscapeApparentValue(apparentF);
 
-  // A single rectangular risk card is cleaner and avoids the crowded pill
-  // plus APPARENT/LIVE captions from the previous layout.
-  display.fillRoundRect(190, 47, 122, 70, 9, risk.status);
-  display.drawRoundRect(190, 47, 122, 70, 9, risk.accent);
+  // Keep the section title outside the pill. The pill itself contains only
+  // the category so the hierarchy stays clean and the label can be centered.
+  display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font2);
-  display.setTextColor(C_WHITE);
-  display.drawString("HEAT RISK", 251, 62);
-  display.drawFastHLine(201, 75, 100, risk.accent);
-  drawBoldText(apparentRiskLabel(), 251, 94, risk.accent);
+  drawBoldText("HEAT RISK", 251, 48, C_WHITE);
+
+  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
+  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
+  display.setFont(&fonts::Font2);
+  drawBoldText(apparentRiskLabel(), 251, 85, risk.accent);
 
   drawLandscapeStatusBar("BUTTON: DETAILS");
 }
