@@ -299,18 +299,19 @@ static void drawApparentTemperature(float apparentF) {
 static void drawLandscapeMetricCard(int x, int y, int w, int h,
                                     const String &label, const String &value) {
   const uint16_t cyan = rgb565(132, 211, 255);
-  drawConceptCard(x, y, w, h, 7, false);
+  drawConceptCard(x, y, w, h, 6, false);
 
-  display.setTextDatum(textdatum_t::middle_center);
+  display.setTextDatum(textdatum_t::middle_left);
   display.setFont(&fonts::Font0);
   display.setTextSize(1.0f);
-  drawBoldText(label, x + w / 2, y + 10, cyan);
+  drawBoldText(label, x + 7, y + h / 2, cyan);
 
-  display.setFont(&fonts::Font4);
-  if (display.textWidth(value) > w - 8) {
-    display.setFont(&fonts::Font2);
+  display.setTextDatum(textdatum_t::middle_right);
+  display.setFont(&fonts::Font2);
+  if (display.textWidth(value) > w - 70) {
+    display.setFont(&fonts::Font0);
   }
-  drawBoldText(value, x + w / 2, y + 33, C_WHITE);
+  drawBoldText(value, x + w - 7, y + h / 2, C_WHITE);
 }
 
 void drawForecastHighLowCard() {
@@ -322,13 +323,13 @@ void drawForecastHighLowCard() {
   if (wx.forecastValid) {
     const float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
     const float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
-    if (isfinite(high)) highText = String((int)lroundf(high)) + String("\xB0");
-    if (isfinite(low)) lowText = String((int)lroundf(low)) + String("\xB0");
+    if (isfinite(high)) highText = String((int)lroundf(high)) + String("\xB0") + "F";
+    if (isfinite(low)) lowText = String((int)lroundf(low)) + String("\xB0") + "F";
   }
 
-  drawLandscapeMetricCard(160, 79, 75, 51,
+  drawLandscapeMetricCard(4, 106, 154, 24,
                           tomorrow ? "TMRW HIGH" : "TODAY HIGH", highText);
-  drawLandscapeMetricCard(238, 79, 78, 51,
+  drawLandscapeMetricCard(162, 106, 154, 24,
                           tomorrow ? "TMRW LOW" : "TODAY LOW", lowText);
 }
 
@@ -342,7 +343,8 @@ void drawHeader() {
   drawBoldText(station, 10, 15, C_WHITE);
 
   display.setTextDatum(textdatum_t::middle_right);
-  display.setFont(&fonts::Font2);
+  display.setFont(&fonts::Font0);
+  display.setTextSize(1.0f);
   display.setTextColor(rgb565(231, 241, 247));
   display.drawString(currentDateText(), 309, 15);
 }
@@ -497,12 +499,12 @@ static void drawFullScreenHero() {
   drawBoldText(station, 9, 14, C_WHITE);
 
   display.setTextDatum(textdatum_t::middle_right);
-  display.setFont(&fonts::Font2);
+  display.setFont(&fonts::Font0);
+  display.setTextSize(1.0f);
   display.setTextColor(rgb565(241, 247, 250));
   display.drawString(currentDateText(), 310, 14);
   display.drawFastHLine(8, 27, 304, risk.accent);
 
-  // Clear visual split: value on the left, risk/status on the right.
   display.drawFastVLine(180, 35, 91, lerp565(risk.accent, C_WHITE, 0.30f));
 
   display.setTextDatum(textdatum_t::middle_center);
@@ -513,21 +515,15 @@ static void drawFullScreenHero() {
   else drawHeroSun(24, 84);
   drawLandscapeApparentValue(apparentF);
 
+  // A single rectangular risk card is cleaner and avoids the crowded pill
+  // plus APPARENT/LIVE captions from the previous layout.
+  display.fillRoundRect(190, 47, 122, 70, 9, risk.status);
+  display.drawRoundRect(190, 47, 122, 70, 9, risk.accent);
   display.setFont(&fonts::Font2);
-  display.setTextColor(rgb565(245, 249, 252));
-  display.drawString("RISK", 250, 41);
-
-  display.fillRoundRect(191, 53, 118, 35, 17, risk.status);
-  display.drawRoundRect(191, 53, 118, 35, 17, risk.accent);
-  display.setFont(&fonts::Font2);
-  drawBoldText(apparentRiskLabel(), 250, 70, risk.accent);
-
-  display.setFont(&fonts::Font2);
-  display.setTextColor(rgb565(245, 249, 252));
-  display.drawString(cold ? "APPARENT COLD" : "APPARENT HEAT", 250, 105);
-  display.setFont(&fonts::Font0);
-  display.setTextSize(1.0f);
-  display.drawString("LIVE", 250, 121);
+  display.setTextColor(C_WHITE);
+  display.drawString("HEAT RISK", 251, 62);
+  display.drawFastHLine(201, 75, 100, risk.accent);
+  drawBoldText(apparentRiskLabel(), 251, 94, risk.accent);
 
   drawLandscapeStatusBar("BUTTON: DETAILS");
 }
@@ -547,6 +543,7 @@ static void drawDetailsScreen() {
   String wind = isfinite(wx.windMph) ? String(wx.windMph, 1) : "--";
   wind += "/";
   wind += isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--";
+  wind += " mph";
 
   String direction = "--";
   if (isfinite(wx.windDirDeg)) {
@@ -554,14 +551,12 @@ static void drawDetailsScreen() {
       String((int)lroundf(wx.windDirDeg)) + String("\xB0");
   }
 
-  // Two balanced rows of four cards maximize readable type at 320x170.
-  drawLandscapeMetricCard(4, 28, 75, 48, "TEMP", temp);
-  drawLandscapeMetricCard(82, 28, 75, 48, "HUMIDITY", humidity);
-  drawLandscapeMetricCard(160, 28, 75, 48, "DEW POINT", dew);
-  drawLandscapeMetricCard(238, 28, 78, 48, "VS YDAY", delta);
-
-  drawLandscapeMetricCard(4, 79, 75, 51, "WIND/GUST", wind);
-  drawLandscapeMetricCard(82, 79, 75, 51, "DIRECTION", direction);
+  drawLandscapeMetricCard(4, 28, 154, 24, "TEMP", temp);
+  drawLandscapeMetricCard(162, 28, 154, 24, "HUMIDITY", humidity);
+  drawLandscapeMetricCard(4, 54, 154, 24, "DEW POINT", dew);
+  drawLandscapeMetricCard(162, 54, 154, 24, "VS YDAY", delta);
+  drawLandscapeMetricCard(4, 80, 154, 24, "WIND/GUST", wind);
+  drawLandscapeMetricCard(162, 80, 154, 24, "DIRECTION", direction);
   drawForecastHighLowCard();
 
   drawLandscapeStatusBar("BUTTON: HEAT INDEX");

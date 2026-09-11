@@ -17,9 +17,6 @@ uint32_t observationAgeSeconds() {
 }
 
 bool dataStale() {
-  // STALE reflects failure to receive a successful API update, not the
-  // provider station's observation timestamp. Some PWS/cloud feeds
-  // legitimately publish observations several minutes behind real time.
   if (!wx.valid || wx.fetchedMs == 0) return false;
   return ((millis() - wx.fetchedMs) / 1000UL) > cfg.staleSeconds;
 }
@@ -28,8 +25,11 @@ String formatClockFromEpoch(time_t t) {
   if (t <= 100000) return "--:--";
   struct tm timeinfo;
   localtime_r(&t, &timeinfo);
+  int hour = timeinfo.tm_hour % 12;
+  if (hour == 0) hour = 12;
   char buf[16];
-  strftime(buf, sizeof(buf), "%-I:%M %p", &timeinfo);
+  snprintf(buf, sizeof(buf), "%d:%02d %s", hour, timeinfo.tm_min,
+           timeinfo.tm_hour < 12 ? "AM" : "PM");
   return String(buf);
 }
 
@@ -37,8 +37,14 @@ String formatDateFromEpoch(time_t t) {
   if (t <= 100000) return "";
   struct tm timeinfo;
   localtime_r(&t, &timeinfo);
-  char buf[32];
-  strftime(buf, sizeof(buf), "%a, %b %-d, %Y", &timeinfo);
+  static const char *MONTHS[] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  };
+  const int month = (timeinfo.tm_mon >= 0 && timeinfo.tm_mon < 12)
+    ? timeinfo.tm_mon : 0;
+  char buf[16];
+  snprintf(buf, sizeof(buf), "%s %d", MONTHS[month], timeinfo.tm_mday);
   return String(buf);
 }
 
@@ -54,5 +60,6 @@ String updateClockText() {
 String currentDateText() {
   time_t now = time(nullptr);
   if (now <= 100000) now = wxEpochSeconds();
-  return formatDateFromEpoch(now);
+  if (now <= 100000) return "";
+  return formatDateFromEpoch(now) + " " + formatClockFromEpoch(now);
 }
