@@ -1,0 +1,49 @@
+name: T-Display risk pill cleanup
+
+on:
+  push:
+    branches: [t-display]
+    paths:
+      - '.github/workflows/t-display-risk-pill.yml'
+      - '.github/t-display-risk-pill.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout t-display
+        uses: actions/checkout@v7
+        with:
+          ref: t-display
+
+      - name: Apply risk pill patch
+        run: python3 .github/t-display-risk-pill.py
+
+      - name: Verify layout contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'drawBoldText("HEAT RISK", 251, 48, C_WHITE)' T-Display-S3/src/display_ui.cpp
+          grep -q 'display.fillRoundRect(193, 61, 116, 48, 24, risk.status)' T-Display-S3/src/display_ui.cpp
+          grep -q 'drawBoldText(apparentRiskLabel(), 251, 85, risk.accent)' T-Display-S3/src/display_ui.cpp
+
+      - name: Install PlatformIO
+        run: python3 -m pip install --upgrade platformio
+
+      - name: Build T-Display S3
+        working-directory: T-Display-S3
+        run: platformio run
+
+      - name: Commit firmware and remove helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/t-display-risk-pill.yml .github/t-display-risk-pill.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add T-Display-S3/src/display_ui.cpp .github/workflows/t-display-risk-pill.yml .github/t-display-risk-pill.py
+          git commit -m 'Move T-Display heat risk label outside pill'
+          git push origin t-display
