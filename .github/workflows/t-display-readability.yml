@@ -1,0 +1,51 @@
+name: T-Display readability patch
+
+on:
+  push:
+    branches: [t-display]
+    paths:
+      - '.github/workflows/t-display-readability.yml'
+      - '.github/t-display-readability.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout t-display
+        uses: actions/checkout@v7
+        with:
+          ref: t-display
+
+      - name: Apply readability patch
+        run: python3 .github/t-display-readability.py
+
+      - name: Verify layout contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'display.setRotation(1)' T-Display-S3/src/display_ui.cpp
+          grep -q 'drawFastVLine(180, 35, 91' T-Display-S3/src/display_ui.cpp
+          grep -q 'drawLandscapeMetricCard(4, 79, 75, 51, "WIND/GUST"' T-Display-S3/src/display_ui.cpp
+          grep -q 'drawLandscapeMetricCard(238, 79, 78, 51' T-Display-S3/src/display_ui.cpp
+          grep -q 'drawBoldText(state, 274, 147' T-Display-S3/src/display_ui.cpp
+
+      - name: Install PlatformIO
+        run: python3 -m pip install --upgrade platformio
+
+      - name: Build T-Display S3
+        working-directory: T-Display-S3
+        run: platformio run
+
+      - name: Commit final firmware and remove helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/t-display-readability.yml .github/t-display-readability.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add T-Display-S3/src/display_ui.cpp .github/workflows/t-display-readability.yml .github/t-display-readability.py
+          git commit -m 'Improve T-Display landscape alignment and readability'
+          git push origin t-display
