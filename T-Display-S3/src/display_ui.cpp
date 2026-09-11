@@ -267,7 +267,7 @@ static void drawMetricLabelValue(int x, int y, const String &label, const String
   const uint16_t cyan = rgb565(114, 202, 255);
   display.setTextDatum(textdatum_t::middle_left);
   display.setFont(&fonts::Font0);
-  display.setTextSize(0.80f);
+  display.setTextSize(1.0f);
   drawBoldText(label, x, y, cyan);
   display.setTextSize(1.0f);
   display.setFont(&fonts::Font2);
@@ -303,9 +303,8 @@ static void drawLandscapeMetricCard(int x, int y, int w, int h,
 
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font0);
-  display.setTextSize(label.length() > 9 ? 0.62f : 0.70f);
-  drawBoldText(label, x + w / 2, y + 10, cyan);
   display.setTextSize(1.0f);
+  drawBoldText(label, x + w / 2, y + 10, cyan);
 
   display.setFont(&fonts::Font4);
   if (display.textWidth(value) > w - 8) {
@@ -343,11 +342,9 @@ void drawHeader() {
   drawBoldText(station, 10, 15, C_WHITE);
 
   display.setTextDatum(textdatum_t::middle_right);
-  display.setFont(&fonts::Font0);
-  display.setTextSize(0.78f);
+  display.setFont(&fonts::Font2);
   display.setTextColor(rgb565(231, 241, 247));
   display.drawString(currentDateText(), 309, 15);
-  display.setTextSize(1.0f);
 }
 
 static void drawLandscapeStatusBar(const char *buttonHint) {
@@ -389,32 +386,31 @@ static void drawLandscapeStatusBar(const char *buttonHint) {
 
   drawClockIcon(13, 147, muted);
   display.setTextDatum(textdatum_t::middle_left);
-  display.setFont(&fonts::Font0);
-  display.setTextSize(0.74f);
+  display.setFont(&fonts::Font2);
   display.setTextColor(C_WHITE);
   display.drawString(left, 25, 147);
 
   // Fixed left-anchored status geometry prevents ONLINE/OFFLINE from
   // crowding or clipping against the physical right edge.
-  display.fillCircle(267, 147, 2, stateColor);
+  display.fillCircle(259, 147, 2, stateColor);
   display.setTextDatum(textdatum_t::middle_left);
-  display.setTextSize(0.74f);
-  drawBoldText(state, 274, 147, stateColor);
+  display.setFont(&fonts::Font2);
+  drawBoldText(state, 266, 147, stateColor);
 
   if (buttonHint && buttonHint[0]) {
     display.setTextDatum(textdatum_t::middle_center);
-    display.setTextSize(0.68f);
+    display.setFont(&fonts::Font0);
+    display.setTextSize(1.0f);
     display.setTextColor(muted);
-    display.drawString(buttonHint, 160, 162);
+    display.drawString(buttonHint, 160, 163);
   }
-  display.setTextSize(1.0f);
 }
 
 void drawFooter() {
   if (!waitingScreenActive && wx.valid) {
     drawLandscapeStatusBar(detailsPageActive
-      ? "EITHER BUTTON: HEAT INDEX"
-      : "EITHER BUTTON: DETAILS");
+      ? "BUTTON: HEAT INDEX"
+      : "BUTTON: DETAILS");
     return;
   }
   drawLandscapeStatusBar("");
@@ -436,14 +432,12 @@ void drawWaitingScreen() {
   display.setTextColor(rgb565(159, 183, 201));
   if (setupApStarted) {
     display.drawString("Connect to setup Wi-Fi", 160, 88);
-    display.setFont(&fonts::Font0);
-    display.setTextSize(0.82f);
+    display.setFont(&fonts::Font2);
     display.setTextColor(rgb565(114, 202, 255));
     display.drawString(setupApName(), 160, 109);
   } else {
     display.drawString(lastApiError.length() ? "Weather API error" : "Preparing display", 160, 84);
-    display.setFont(&fonts::Font0);
-    display.setTextSize(0.82f);
+    display.setFont(&fonts::Font2);
     display.setTextColor(rgb565(114, 202, 255));
     if (WiFi.status() != WL_CONNECTED) {
       display.drawString("Connecting to Wi-Fi...", 160, 107);
@@ -503,11 +497,9 @@ static void drawFullScreenHero() {
   drawBoldText(station, 9, 14, C_WHITE);
 
   display.setTextDatum(textdatum_t::middle_right);
-  display.setFont(&fonts::Font0);
-  display.setTextSize(0.78f);
+  display.setFont(&fonts::Font2);
   display.setTextColor(rgb565(241, 247, 250));
   display.drawString(currentDateText(), 310, 14);
-  display.setTextSize(1.0f);
   display.drawFastHLine(8, 27, 304, risk.accent);
 
   // Clear visual split: value on the left, risk/status on the right.
@@ -521,30 +513,23 @@ static void drawFullScreenHero() {
   else drawHeroSun(24, 84);
   drawLandscapeApparentValue(apparentF);
 
-  display.setFont(&fonts::Font0);
-  display.setTextSize(0.72f);
+  display.setFont(&fonts::Font2);
   display.setTextColor(rgb565(245, 249, 252));
-  display.drawString("CURRENT RISK", 249, 41);
-  display.setTextSize(1.0f);
+  display.drawString("RISK", 250, 41);
 
-  display.fillRoundRect(188, 52, 124, 37, 18, risk.status);
-  display.drawRoundRect(188, 52, 124, 37, 18, risk.accent);
-  display.setFont(&fonts::Font4);
-  String riskLabel = apparentRiskLabel();
-  if (display.textWidth(riskLabel) > 112) {
-    display.setFont(&fonts::Font2);
-  }
-  drawBoldText(riskLabel, 250, 70, risk.accent);
+  display.fillRoundRect(191, 53, 118, 35, 17, risk.status);
+  display.drawRoundRect(191, 53, 118, 35, 17, risk.accent);
+  display.setFont(&fonts::Font2);
+  drawBoldText(apparentRiskLabel(), 250, 70, risk.accent);
 
-  display.setFont(&fonts::Font0);
-  display.setTextSize(0.78f);
+  display.setFont(&fonts::Font2);
   display.setTextColor(rgb565(245, 249, 252));
-  display.drawString(cold ? "APPARENT COLD" : "APPARENT HEAT", 250, 103);
-  display.setTextSize(0.72f);
-  display.drawString("LIVE CONDITIONS", 250, 119);
+  display.drawString(cold ? "APPARENT COLD" : "APPARENT HEAT", 250, 105);
+  display.setFont(&fonts::Font0);
   display.setTextSize(1.0f);
+  display.drawString("LIVE", 250, 121);
 
-  drawLandscapeStatusBar("EITHER BUTTON: DETAILS");
+  drawLandscapeStatusBar("BUTTON: DETAILS");
 }
 
 static void drawDetailsScreen() {
@@ -579,7 +564,7 @@ static void drawDetailsScreen() {
   drawLandscapeMetricCard(82, 79, 75, 51, "DIRECTION", direction);
   drawForecastHighLowCard();
 
-  drawLandscapeStatusBar("EITHER BUTTON: HEAT INDEX");
+  drawLandscapeStatusBar("BUTTON: HEAT INDEX");
 }
 
 void drawWeatherScreen() {
