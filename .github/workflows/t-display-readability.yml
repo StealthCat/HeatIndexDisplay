@@ -20,7 +20,10 @@ jobs:
           ref: t-display
 
       - name: Apply readability patch
-        run: python3 .github/t-display-readability.py
+        shell: bash
+        run: |
+          sed -i 's/re.subn(pattern, repl, text/re.subn(pattern, lambda _m: repl, text/' .github/t-display-readability.py
+          python3 .github/t-display-readability.py
 
       - name: Verify layout contract
         shell: bash
