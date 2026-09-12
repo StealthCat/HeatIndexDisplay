@@ -1,0 +1,85 @@
+name: One-time T-Display risk pill fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-t-display-risk-pill.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fit long heat-risk labels inside the T-Display pill
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('T-Display-S3/src/display_ui.cpp')
+          text = path.read_text()
+          old = '''  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
+  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
+  display.setFont(&fonts::Font2);
+  drawBoldText(apparentRiskLabel(), 251, 85, risk.accent);
+'''
+          new = '''  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
+  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
+
+  // Keep short risk categories on one centered line.  Longer two-word
+  // categories (for example EXTREME CAUTION) are split across two centered
+  // lines so they remain large and readable without touching the pill edge.
+  String riskLabel = apparentRiskLabel();
+  display.setFont(&fonts::Font2);
+  if (display.textWidth(riskLabel) <= 100) {
+    drawBoldText(riskLabel, 251, 85, risk.accent);
+  } else {
+    int splitAt = riskLabel.indexOf(' ');
+    if (splitAt > 0) {
+      String topLine = riskLabel.substring(0, splitAt);
+      String bottomLine = riskLabel.substring(splitAt + 1);
+      drawBoldText(topLine, 251, 77, risk.accent);
+      drawBoldText(bottomLine, 251, 93, risk.accent);
+    } else {
+      display.setFont(&fonts::Font0);
+      drawBoldText(riskLabel, 251, 85, risk.accent);
+    }
+  }
+'''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one risk-pill block, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Remove one-time workflow before final commit
+        run: rm .github/workflows/fix-t-display-risk-pill.yml
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Install PlatformIO
+        run: python -m pip install --upgrade platformio
+
+      - name: Build T-Display-S3
+        working-directory: T-Display-S3
+        run: platformio run
+
+      - name: Commit verified fix to main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add T-Display-S3/src/display_ui.cpp .github/workflows/fix-t-display-risk-pill.yml
+          git commit -m 'Fit long T-Display heat-risk labels'
+          git push origin HEAD:main
