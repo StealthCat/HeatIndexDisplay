@@ -24,39 +24,43 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           path = Path('T-Display-S3/src/display_ui.cpp')
           text = path.read_text()
-          old = '''  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
-  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
-  display.setFont(&fonts::Font2);
-  drawBoldText(apparentRiskLabel(), 251, 85, risk.accent);
-'''
-          new = '''  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
-  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
-
-  // Keep short risk categories on one centered line.  Longer two-word
-  // categories (for example EXTREME CAUTION) are split across two centered
-  // lines so they remain large and readable without touching the pill edge.
-  String riskLabel = apparentRiskLabel();
-  display.setFont(&fonts::Font2);
-  if (display.textWidth(riskLabel) <= 100) {
-    drawBoldText(riskLabel, 251, 85, risk.accent);
-  } else {
-    int splitAt = riskLabel.indexOf(' ');
-    if (splitAt > 0) {
-      String topLine = riskLabel.substring(0, splitAt);
-      String bottomLine = riskLabel.substring(splitAt + 1);
-      drawBoldText(topLine, 251, 77, risk.accent);
-      drawBoldText(bottomLine, 251, 93, risk.accent);
-    } else {
-      display.setFont(&fonts::Font0);
-      drawBoldText(riskLabel, 251, 85, risk.accent);
-    }
-  }
-'''
-          if text.count(old) != 1:
-              raise SystemExit(f'Expected exactly one risk-pill block, found {text.count(old)}')
+          old_lines = [
+              '  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);',
+              '  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);',
+              '  display.setFont(&fonts::Font2);',
+              '  drawBoldText(apparentRiskLabel(), 251, 85, risk.accent);',
+          ]
+          new_lines = [
+              '  display.fillRoundRect(193, 61, 116, 48, 24, risk.status);',
+              '  display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);',
+              '',
+              '  // Keep short risk categories on one centered line. Longer two-word',
+              '  // categories such as EXTREME CAUTION are split across two centered',
+              '  // lines so they stay large and readable inside the pill.',
+              '  String riskLabel = apparentRiskLabel();',
+              '  display.setFont(&fonts::Font2);',
+              '  if (display.textWidth(riskLabel) <= 100) {',
+              '    drawBoldText(riskLabel, 251, 85, risk.accent);',
+              '  } else {',
+              "    int splitAt = riskLabel.indexOf(' ');",
+              '    if (splitAt > 0) {',
+              '      String topLine = riskLabel.substring(0, splitAt);',
+              '      String bottomLine = riskLabel.substring(splitAt + 1);',
+              '      drawBoldText(topLine, 251, 77, risk.accent);',
+              '      drawBoldText(bottomLine, 251, 93, risk.accent);',
+              '    } else {',
+              '      display.setFont(&fonts::Font0);',
+              '      drawBoldText(riskLabel, 251, 85, risk.accent);',
+              '    }',
+              '  }',
+          ]
+          old = '\n'.join(old_lines) + '\n'
+          new = '\n'.join(new_lines) + '\n'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one risk-pill block, found {count}')
           path.write_text(text.replace(old, new, 1))
           PY
 
