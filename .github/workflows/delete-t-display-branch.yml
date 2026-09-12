@@ -1,7 +1,6 @@
 name: One-time delete t-display branch
 
 on:
-  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -19,13 +18,9 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-
       - name: Delete t-display branch
-        shell: bash
         run: git push origin --delete t-display
-
-      - name: Remove this one-time workflow
-        shell: bash
+      - name: Remove one-time workflow
         run: |
           rm .github/workflows/delete-t-display-branch.yml
           git config user.name 'github-actions[bot]'
@@ -33,5 +28,3 @@ jobs:
           git add .github/workflows/delete-t-display-branch.yml
           git commit -m 'Remove one-time t-display branch deletion workflow'
           git push origin HEAD:main
-
-# trigger 2
