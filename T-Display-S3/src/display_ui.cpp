@@ -556,8 +556,26 @@ static void drawFullScreenHero() {
 
   display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
   display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
+
+  // Keep short risk categories on one centered line. Longer two-word
+  // categories such as EXTREME CAUTION are split across two centered
+  // lines so they stay large and readable inside the pill.
+  String riskLabel = apparentRiskLabel();
   display.setFont(&fonts::Font2);
-  drawBoldText(apparentRiskLabel(), 251, 85, risk.accent);
+  if (display.textWidth(riskLabel) <= 100) {
+    drawBoldText(riskLabel, 251, 85, risk.accent);
+  } else {
+    int splitAt = riskLabel.indexOf(' ');
+    if (splitAt > 0) {
+      String topLine = riskLabel.substring(0, splitAt);
+      String bottomLine = riskLabel.substring(splitAt + 1);
+      drawBoldText(topLine, 251, 77, risk.accent);
+      drawBoldText(bottomLine, 251, 93, risk.accent);
+    } else {
+      display.setFont(&fonts::Font0);
+      drawBoldText(riskLabel, 251, 85, risk.accent);
+    }
+  }
 
   drawLandscapeStatusBar("BUTTON: DETAILS");
 }
