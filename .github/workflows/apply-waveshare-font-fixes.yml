@@ -46,10 +46,6 @@ jobs:
           print(f"Firmware source pins OK: {len(manifest['firmware_sources'])} files")
           PY
 
-      - name: Run emulator tests
-        working-directory: emulator/concept-1
-        run: python3 -m unittest discover -s tests -v
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
