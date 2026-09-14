@@ -158,13 +158,14 @@ void drawWindIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x,
 void drawCompassIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_COMPASS); }
 void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
 
+// The Arduino_GFX built-in bitmap font is already aligned to the physical
+// pixel grid.  Repainting each glyph at +1 X/Y to fake bold text caused
+// visible smearing and stair-stepped edges on the 240x320 Waveshare panel.
+// Keep these helpers for the existing layout API, but render every glyph once
+// so labels, values, the header, risk pill and footer stay crisp.
 static void printBoldAt(int x, int y, const String &text, uint16_t color, uint8_t size) {
   setText(color, size);
   gfx->setCursor(x, y);
-  gfx->print(text);
-  gfx->setCursor(x + 1, y);
-  gfx->print(text);
-  gfx->setCursor(x, y + 1);
   gfx->print(text);
 }
 
@@ -175,10 +176,6 @@ static void centerBoldText(const String &text, int centerX, int y, uint8_t size,
   gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
   int x = centerX - (int)w / 2;
   gfx->setCursor(x, y);
-  gfx->print(text);
-  gfx->setCursor(x + 1, y);
-  gfx->print(text);
-  gfx->setCursor(x, y + 1);
   gfx->print(text);
 }
 
