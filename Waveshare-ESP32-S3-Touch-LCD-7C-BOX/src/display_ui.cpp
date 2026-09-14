@@ -170,7 +170,7 @@ static void enable7CBacklight() {
 static String signedTempDelta(float value) {
   if (!isfinite(value)) return "--";
   String s; if (value >= 0.0f) s += "+";
-  s += String(value, 1); s += String((char)247); s += "F";
+  s += String(value, 1);
   return s;
 }
 
@@ -181,6 +181,33 @@ static void drawMetricCardValue(int x, int y, int w, int h, const uint16_t *icon
   drawIconBitmapScaled(x + 12, y + (h - 40) / 2, iconData, 2);
   printBoldAt(x + 64, y + 9, label, cyan, 2);
   printBoldAt(x + 64, y + 27, value, C_WHITE, valueSize);
+}
+
+static void drawMetricCardTemperatureValue(int x, int y, int w, int h,
+                                           const uint16_t *iconData,
+                                           const String &label, float value,
+                                           bool signedValue = false) {
+  const uint16_t cyan = rgb565(114, 202, 255);
+  drawConceptCard(x, y, w, h, 12, false);
+  drawIconBitmapScaled(x + 12, y + (h - 40) / 2, iconData, 2);
+  printBoldAt(x + 64, y + 9, label, cyan, 2);
+  if (!isfinite(value)) {
+    printBoldAt(x + 64, y + 27, "--", C_WHITE, 3);
+    return;
+  }
+
+  String number;
+  if (signedValue && value >= 0.0f) number += "+";
+  number += String(value, 1);
+  setText(C_WHITE, 3);
+  int16_t x1, y1;
+  uint16_t numberW, numberH;
+  gfx->getTextBounds(number, 0, 0, &x1, &y1, &numberW, &numberH);
+  const int valueX = x + 64;
+  const int valueY = y + 27;
+  printBoldAt(valueX, valueY, number, C_WHITE, 3);
+  gfx->drawCircle(valueX + (int)numberW + 5, valueY + 6, 3, C_WHITE);
+  printBoldAt(valueX + (int)numberW + 11, valueY + 8, "F", C_WHITE, 2);
 }
 
 static void drawApparentTemperature(float apparentF) {
@@ -214,8 +241,26 @@ void drawForecastHighLowCard() {
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
   if (wx.forecastValid && isfinite(high) && isfinite(low)) {
-    String value = String((int)lroundf(high)) + String((char)247) + " / " + String((int)lroundf(low)) + String((char)247);
-    centerBoldText(value, 635, 355, 4, C_WHITE);
+    String highText = String((int)lroundf(high));
+    String lowText = String((int)lroundf(low));
+    setText(C_WHITE, 4);
+    int16_t x1, y1;
+    uint16_t highW, textH, lowW, slashW;
+    gfx->getTextBounds(highText, 0, 0, &x1, &y1, &highW, &textH);
+    gfx->getTextBounds(lowText, 0, 0, &x1, &y1, &lowW, &textH);
+    gfx->getTextBounds("/", 0, 0, &x1, &y1, &slashW, &textH);
+    const int degreeSlot = 13;
+    const int gap = 8;
+    const int groupW = (int)highW + degreeSlot + gap + (int)slashW + gap +
+                       (int)lowW + degreeSlot;
+    int valueX = 635 - groupW / 2;
+    printBoldAt(valueX, 355, highText, C_WHITE, 4);
+    gfx->drawCircle(valueX + (int)highW + 5, 361, 3, C_WHITE);
+    valueX += (int)highW + degreeSlot + gap;
+    printBoldAt(valueX, 355, "/", C_WHITE, 4);
+    valueX += (int)slashW + gap;
+    printBoldAt(valueX, 355, lowText, C_WHITE, 4);
+    gfx->drawCircle(valueX + (int)lowW + 5, 361, 3, C_WHITE);
   } else {
     centerBoldText("-- / --", 635, 355, 4, C_WHITE);
   }
@@ -311,10 +356,10 @@ void drawWeatherScreen() {
   gfx->drawRoundRect(60, 260, 373, 34, 17, risk.accent);
   centerBoldText(apparentRiskLabel(), 246, 268, 2, risk.accent);
 
-  drawMetricCardValue(477, 82, 290, 50, ICON_THERMOMETER, "TEMP", isfinite(wx.tempF) ? String(wx.tempF, 1) + String((char)247) + "F" : "--");
+  drawMetricCardTemperatureValue(477, 82, 290, 50, ICON_THERMOMETER, "TEMP", wx.tempF);
   drawMetricCardValue(477, 137, 290, 50, ICON_DROP, "HUMIDITY", isfinite(wx.humidity) ? String((int)lroundf(wx.humidity)) + "%" : "--");
-  drawMetricCardValue(477, 192, 290, 50, ICON_LEAF, "DEW POINT", isfinite(wx.dewPointF) ? String(wx.dewPointF, 1) + String((char)247) + "F" : "--");
-  drawMetricCardValue(477, 247, 290, 60, ICON_TREND, "FROM YDAY", signedTempDelta(wx.fromYesterdayF));
+  drawMetricCardTemperatureValue(477, 192, 290, 50, ICON_LEAF, "DEW POINT", wx.dewPointF);
+  drawMetricCardTemperatureValue(477, 247, 290, 60, ICON_TREND, "FROM YDAY", wx.fromYesterdayF, true);
 
   drawConceptCard(33, 316, 207, 76, 14, true);
   drawIconBitmapScaled(48, 337, ICON_WIND, 2);
@@ -328,8 +373,15 @@ void drawWeatherScreen() {
   drawIconBitmapScaled(270, 337, ICON_COMPASS, 2);
   centerBoldText("DIRECTION", 356, 322, 2, rgb565(157, 200, 228));
   if (isfinite(wx.windDirDeg)) {
-    String dirNumber = String((int)lroundf(wx.windDirDeg)) + String((char)247);
-    centerBoldText(dirNumber, 385, 345, 4, C_WHITE);
+    String dirNumber = String((int)lroundf(wx.windDirDeg));
+    setText(C_WHITE, 4);
+    int16_t x1, y1;
+    uint16_t dirW, dirH;
+    gfx->getTextBounds(dirNumber, 0, 0, &x1, &y1, &dirW, &dirH);
+    const int groupW = (int)dirW + 13;
+    const int startX = 385 - groupW / 2;
+    printBoldAt(startX, 345, dirNumber, C_WHITE, 4);
+    gfx->drawCircle(startX + (int)dirW + 5, 351, 3, C_WHITE);
     centerBoldText(directionText(wx.windDirDeg), 356, 376, 2, rgb565(157, 200, 228));
   } else {
     centerBoldText("--", 385, 345, 4, C_WHITE);

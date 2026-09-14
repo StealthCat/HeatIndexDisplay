@@ -28,8 +28,11 @@ String formatClockFromEpoch(time_t t) {
   if (t <= 100000) return "--:--";
   struct tm timeinfo;
   localtime_r(&t, &timeinfo);
+  int hour = timeinfo.tm_hour % 12;
+  if (hour == 0) hour = 12;
   char buf[16];
-  strftime(buf, sizeof(buf), "%-I:%M %p", &timeinfo);
+  snprintf(buf, sizeof(buf), "%d:%02d %s", hour, timeinfo.tm_min,
+           timeinfo.tm_hour < 12 ? "AM" : "PM");
   return String(buf);
 }
 
@@ -37,8 +40,20 @@ String formatDateFromEpoch(time_t t) {
   if (t <= 100000) return "";
   struct tm timeinfo;
   localtime_r(&t, &timeinfo);
+  static const char *WEEKDAYS[] = {
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+  };
+  static const char *MONTHS[] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  };
+  const int weekday = (timeinfo.tm_wday >= 0 && timeinfo.tm_wday < 7)
+    ? timeinfo.tm_wday : 0;
+  const int month = (timeinfo.tm_mon >= 0 && timeinfo.tm_mon < 12)
+    ? timeinfo.tm_mon : 0;
   char buf[32];
-  strftime(buf, sizeof(buf), "%a, %b %-d, %Y", &timeinfo);
+  snprintf(buf, sizeof(buf), "%s, %s %d, %d", WEEKDAYS[weekday],
+           MONTHS[month], timeinfo.tm_mday, timeinfo.tm_year + 1900);
   return String(buf);
 }
 

@@ -230,8 +230,6 @@ String signedTempDelta(float value) {
   String s;
   if (value >= 0.0f) s += "+";
   s += String(value, 1);
-  s += String((char)247);
-  s += "F";
   return s;
 }
 
@@ -247,7 +245,24 @@ static void printTempValueCompact(int x, int y, float value) {
   uint16_t w, h;
   gfx->getTextBounds(number, 0, 0, &x1, &y1, &w, &h);
   printBoldAt(x, y, number, C_WHITE, 2);
-  printBoldAt(x + (int)w + 1, y + 7, String((char)247) + "F", C_WHITE, 1);
+  gfx->drawCircle(x + (int)w + 3, y + 3, 2, C_WHITE);
+  printBoldAt(x + (int)w + 7, y + 7, "F", C_WHITE, 1);
+}
+
+static void printSignedTempValueCompact(int x, int y, float value) {
+  if (!isfinite(value)) {
+    printBoldAt(x, y, "--", C_WHITE, 1);
+    return;
+  }
+
+  String number = signedTempDelta(value);
+  setText(C_WHITE, 1);
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx->getTextBounds(number, 0, 0, &x1, &y1, &w, &h);
+  printBoldAt(x, y, number, C_WHITE, 1);
+  gfx->drawCircle(x + (int)w + 2, y + 2, 1, C_WHITE);
+  printBoldAt(x + (int)w + 5, y, "F", C_WHITE, 1);
 }
 
 static void drawMetricCardValue(int x, int y, int w, int h, const uint16_t *iconData,
@@ -288,11 +303,18 @@ void drawForecastHighLowCard() {
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
   if (wx.forecastValid && isfinite(high) && isfinite(low)) {
-    String highText = String((int)lroundf(high)) + String((char)247);
-    String lowText = String((int)lroundf(low)) + String((char)247);
+    String highText = String((int)lroundf(high));
+    String lowText = String((int)lroundf(low));
+    setText(C_WHITE, 2);
+    int16_t x1, y1;
+    uint16_t highW, textH, lowW;
+    gfx->getTextBounds(highText, 0, 0, &x1, &y1, &highW, &textH);
+    gfx->getTextBounds(lowText, 0, 0, &x1, &y1, &lowW, &textH);
     printBoldAt(148, 239, highText, C_WHITE, 2);
+    gfx->drawCircle(148 + (int)highW + 3, 242, 2, C_WHITE);
     printBoldAt(183, 245, "/", C_WHITE, 1);
     printBoldAt(192, 239, lowText, C_WHITE, 2);
+    gfx->drawCircle(192 + (int)lowW + 3, 242, 2, C_WHITE);
   } else {
     centerBoldText("-- / --", 190, 239, 2, C_WHITE);
   }
@@ -437,7 +459,7 @@ void drawWeatherScreen() {
   drawConceptCard(143, 165, 87, 40, 7, false);
   drawTrend(148, 176, cyan);
   printBoldAt(169, 171, "FROM YDAY", cyan, 1);
-  printBoldAt(169, 186, signedTempDelta(wx.fromYesterdayF), C_WHITE, 1);
+  printSignedTempValueCompact(169, 186, wx.fromYesterdayF);
 
   // Bottom three cards.
   drawConceptCard(10, 210, 62, 52, 8, true);
