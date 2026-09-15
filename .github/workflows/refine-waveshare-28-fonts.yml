@@ -34,6 +34,32 @@ jobs:
       - name: Apply smoother smaller font patch
         run: python .github/scripts/refine_waveshare_28_fonts.py
 
+      - name: Correct GFX font include ordering
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp')
+          s = p.read_text()
+          old = '''#include "ui_assets.h"
+#include "fonts/FreeSans8pt7b.h"
+#include "fonts/FreeSans10pt7b.h"
+#include "fonts/FreeSans16pt7b.h"
+#include "fonts/FreeSans18pt7b.h"
+
+#include <Arduino_GFX_Library.h>
+'''
+          new = '''#include "ui_assets.h"
+
+#include <Arduino_GFX_Library.h>
+#include "fonts/FreeSans8pt7b.h"
+#include "fonts/FreeSans10pt7b.h"
+#include "fonts/FreeSans16pt7b.h"
+#include "fonts/FreeSans18pt7b.h"
+'''
+          assert old in s, 'font include block not found'
+          p.write_text(s.replace(old, new, 1))
+          PY
+
       - name: Verify rendering contract
         run: |
           set -euxo pipefail
