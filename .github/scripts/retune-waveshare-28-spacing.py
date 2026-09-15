@@ -42,7 +42,7 @@ old = '''void drawForecastHighLowCard() {
   drawSunIcon(160, 237, rgb565(255, 193, 43));
 
   centerBoldText(tomorrow ? "TOMORROW" : "TODAY", 188, 214, 1, cyan);
-  centerBoldText("HIGH / LOW F", 188, 225, 1, muted);
+  centerBoldText("HIGH / LOW", 188, 225, 1, muted);
 
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
@@ -102,13 +102,12 @@ replacements.append((old, new, 'forecast card'))
 old = '''  // Bottom three cards.
   drawConceptCard(10, 210, 62, 52, 8, true);
   drawWindIcon(15, 226, cyan);
-  centerBoldText("WIND", 41, 214, 1, rgb565(157, 200, 228));
+  centerBoldText("WIND MPH", 41, 214, 1, rgb565(157, 200, 228));
   centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 51, 228, 2, C_WHITE);
-  centerBoldText("mph", 51, 242, 1, muted);
   centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"),
-                 41, 251, 1, rgb565(166, 209, 234));
+                 41, 244, 1, rgb565(166, 209, 234));
   centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"),
-                 41, 258, 1, rgb565(166, 209, 234));
+                 41, 253, 1, rgb565(166, 209, 234));
 
   drawConceptCard(76, 210, 62, 52, 8, true);
   drawCompassIcon(88, 236, cyan);
