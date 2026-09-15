@@ -4,7 +4,7 @@ path = Path('Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp')
 s = path.read_text()
 
 include_needle = '#include "ui_assets.h"\n\n#include <Arduino_GFX_Library.h>\n'
-include_repl = '''#include "ui_assets.h"\n#include "fonts/FreeSans8pt7b.h"\n#include "fonts/FreeSans10pt7b.h"\n#include "fonts/FreeSans16pt7b.h"\n#include "fonts/FreeSans18pt7b.h"\n\n#include <Arduino_GFX_Library.h>\n'''
+include_repl = '''#include "ui_assets.h"\n\n#include <Arduino_GFX_Library.h>\n#include "fonts/FreeSans8pt7b.h"\n#include "fonts/FreeSans10pt7b.h"\n#include "fonts/FreeSans16pt7b.h"\n#include "fonts/FreeSans18pt7b.h"\n'''
 assert include_needle in s, 'include insertion point not found'
 s = s.replace(include_needle, include_repl, 1)
 
