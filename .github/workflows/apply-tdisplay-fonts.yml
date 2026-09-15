@@ -1,0 +1,62 @@
+name: Apply T-Display font parity
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/apply_tdisplay_fonts.py'
+      - '.github/workflows/apply-tdisplay-fonts.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-build-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply exact T-Display fonts
+        run: python3 tools/apply_tdisplay_fonts.py
+
+      - name: Verify font parity contract
+        run: |
+          grep -q 'fonts::Font0' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'fonts::Font2' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'fonts::Font4' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'fonts::Font7' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'fonts::Font0' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
+          grep -q 'fonts::Font2' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
+          grep -q 'fonts::Font4' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
+          grep -q 'fonts::Font7' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
+          ! grep -q 'FreeSans8pt7b' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build T-Display S3
+        run: pio run -d T-Display-S3
+
+      - name: Build Waveshare 2.8
+        run: pio run -d Waveshare-ESP32-S3-Touch-LCD-2.8
+
+      - name: Build Waveshare 7C BOX
+        run: pio run -d Waveshare-ESP32-S3-Touch-LCD-7C-BOX
+
+      - name: Commit firmware and remove helpers
+        run: |
+          rm -f tools/apply_tdisplay_fonts.py .github/workflows/apply-tdisplay-fonts.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Match Waveshare fonts to T-Display' || exit 0
+          git push origin HEAD:main
