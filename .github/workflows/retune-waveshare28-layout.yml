@@ -1,0 +1,65 @@
+name: Waveshare 2.8 lower layout retune
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/retune-waveshare28-layout.yml'
+      - '.github/scripts/retune-waveshare28-layout.py'
+
+permissions:
+  contents: write
+
+jobs:
+  retune-build-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply layout patch
+        run: python3 .github/scripts/retune-waveshare28-layout.py
+
+      - name: Verify layout contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp').read_text()
+          required = [
+              'drawConceptCard(10, 210, 68, 52, 8, true);',
+              'drawConceptCard(82, 210, 68, 52, 8, true);',
+              'drawConceptCard(154, 210, 76, 52, 8, true);',
+              'String("GUST ")',
+              'gfx->drawFastVLine(158, 280, 20',
+              'int stateX = 224 - (int)stateW;',
+              'centerBoldText(apparentTitle(), 94, 70, 1, C_WHITE);',
+          ]
+          for item in required:
+              assert item in s, item
+          assert 'String("G") + (isfinite(wx.gustMph)' not in s
+          print('layout contract OK')
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build Waveshare 2.8
+        run: pio run -d Waveshare-ESP32-S3-Touch-LCD-2.8
+
+      - name: Commit firmware and remove helpers
+        run: |
+          rm -f .github/scripts/retune-waveshare28-layout.py
+          rm -f .github/workflows/retune-waveshare28-layout.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp .github
+          git commit -m 'Clean up Waveshare 2.8 lower layout'
+          git push origin HEAD:main
