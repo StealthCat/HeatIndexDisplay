@@ -21,7 +21,11 @@ jobs:
           fetch-depth: 0
 
       - name: Apply exact T-Display fonts
-        run: python3 tools/apply_tdisplay_fonts.py
+        run: |
+          python3 tools/apply_tdisplay_fonts.py
+          # Arduino-ESP32 3.3.5 on the 7C requires a current LovyanGFX build.
+          # The built-in Font0/2/4/7 assets remain the same T-Display family.
+          sed -i 's#lovyan03/LovyanGFX@1.2.7#lovyan03/LovyanGFX@1.2.29#' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/platformio.ini
 
       - name: Verify font parity contract
         run: |
@@ -33,6 +37,7 @@ jobs:
           grep -q 'fonts::Font2' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
           grep -q 'fonts::Font4' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
           grep -q 'fonts::Font7' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/src/display_ui.cpp
+          grep -q 'lovyan03/LovyanGFX@1.2.29' Waveshare-ESP32-S3-Touch-LCD-7C-BOX/platformio.ini
           ! grep -q 'FreeSans8pt7b' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
 
       - name: Set up Python
