@@ -12,6 +12,7 @@
 #include "ui_assets.h"
 
 #include <Arduino_GFX_Library.h>
+#include <LovyanGFX.hpp>
 
 // Waveshare ESP32-S3-Touch-LCD-7C-BOX: 7-inch 800x480 RGB565 ST7262.
 // Touch is intentionally unused. Pins/timings follow Waveshare's 7C reference.
@@ -89,31 +90,79 @@ static void fillGradientRoundRect(int x, int y, int w, int h, int radius,
   }
 }
 
-static void setText(uint16_t color, uint8_t size) {
+static lgfx::LGFX_Sprite tDisplayTextRaster;
+
+static const lgfx::IFont *tDisplayFontForTier(uint8_t tier) {
+  if (tier <= 1) return &fonts::Font0;  // T-Display native 8 px UI font
+  if (tier <= 3) return &fonts::Font2;  // T-Display native 16 px UI font
+  return &fonts::Font4;                 // T-Display native 26 px title/unit font
+}
+
+static int tDisplayTextWidth(const String &text, const lgfx::IFont *font) {
+  tDisplayTextRaster.setFont(font);
+  tDisplayTextRaster.setTextSize(1.0f);
+  return tDisplayTextRaster.textWidth(text.c_str());
+}
+
+static int tDisplayTextWidth(const String &text, uint8_t tier) {
+  return tDisplayTextWidth(text, tDisplayFontForTier(tier));
+}
+
+static void drawTDisplayTextAt(int x, int y, const String &text,
+                               uint16_t color, const lgfx::IFont *font) {
+  if (!text.length()) return;
+  tDisplayTextRaster.deleteSprite();
+  tDisplayTextRaster.setColorDepth(8);
+  tDisplayTextRaster.setFont(font);
+  tDisplayTextRaster.setTextSize(1.0f);
+  tDisplayTextRaster.setTextDatum(lgfx::textdatum_t::top_left);
+  const int w = tDisplayTextRaster.textWidth(text.c_str()) + 2;
+  const int h = tDisplayTextRaster.fontHeight() + 2;
+  if (!tDisplayTextRaster.createSprite(w, h)) return;
+  tDisplayTextRaster.fillSprite(0x000000U);
+  tDisplayTextRaster.setTextColor(0xFFFFFFU, 0x000000U);
+  tDisplayTextRaster.drawString(text.c_str(), 0, 0);
+  for (int py = 0; py < h; ++py) {
+    for (int px = 0; px < w; ++px) {
+      if (tDisplayTextRaster.readPixelValue(px, py) != 0) {
+        gfx->drawPixel(x + px, y + py, color);
+      }
+    }
+  }
+  tDisplayTextRaster.deleteSprite();
+}
+
+static void drawTDisplayTextAt(int x, int y, const String &text,
+                               uint16_t color, uint8_t tier) {
+  drawTDisplayTextAt(x, y, text, color, tDisplayFontForTier(tier));
+}
+
+void setText(uint16_t color, uint8_t tier) {
+  // Keep Arduino_GFX's bounds API usable for legacy geometry calculations,
+  // while all visible glyphs are rasterized from the exact T-Display fonts.
+  gfx->setFont(nullptr);
   gfx->setTextColor(color);
-  gfx->setTextSize(size);
+  gfx->setTextSize(tier <= 1 ? 1 : (tier <= 3 ? 2 : 4));
 }
 
-static void printBoldAt(int x, int y, const String &text, uint16_t color, uint8_t size) {
-  setText(color, size);
-  gfx->setCursor(x, y); gfx->print(text);
-  gfx->setCursor(x + 1, y); gfx->print(text);
-  gfx->setCursor(x, y + 1); gfx->print(text);
+void centerText(const String &text, int centerX, int topY, uint8_t tier, uint16_t color) {
+  const int w = tDisplayTextWidth(text, tier);
+  drawTDisplayTextAt(centerX - w / 2, topY, text, color, tier);
 }
 
-static void centerBoldText(const String &text, int centerX, int y, uint8_t size, uint16_t color) {
-  setText(color, size);
-  int16_t x1, y1; uint16_t w, h;
-  gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-  printBoldAt(centerX - (int)w / 2, y, text, color, size);
+static void rightText(const String &text, int rightX, int topY, uint8_t tier, uint16_t color) {
+  const int w = tDisplayTextWidth(text, tier);
+  drawTDisplayTextAt(rightX - w, topY, text, color, tier);
 }
 
-static void rightText(const String &text, int rightX, int y, uint8_t size, uint16_t color) {
-  setText(color, size);
-  int16_t x1, y1; uint16_t w, h;
-  gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-  gfx->setCursor(rightX - (int)w, y);
-  gfx->print(text);
+static void printBoldAt(int x, int y, const String &text, uint16_t color, uint8_t tier) {
+  // Match the T-Display font face and native size, but keep a single raster
+  // pass on the Waveshare panels for the cleanest physical-pixel edges.
+  drawTDisplayTextAt(x, y, text, color, tier);
+}
+
+static void centerBoldText(const String &text, int centerX, int y, uint8_t tier, uint16_t color) {
+  centerText(text, centerX, y, tier, color);
 }
 
 static void drawConceptCard(int x, int y, int w, int h, int radius = 12, bool highlight = false) {
@@ -179,8 +228,8 @@ static void drawMetricCardValue(int x, int y, int w, int h, const uint16_t *icon
   const uint16_t cyan = rgb565(114, 202, 255);
   drawConceptCard(x, y, w, h, 12, false);
   drawIconBitmapScaled(x + 12, y + (h - 40) / 2, iconData, 2);
-  printBoldAt(x + 64, y + 9, label, cyan, 2);
-  printBoldAt(x + 64, y + 27, value, C_WHITE, valueSize);
+  printBoldAt(x + 64, y + 8, label, cyan, 1);
+  printBoldAt(x + 64, y + 25, value, C_WHITE, valueSize);
 }
 
 static void drawMetricCardTemperatureValue(int x, int y, int w, int h,
@@ -190,45 +239,35 @@ static void drawMetricCardTemperatureValue(int x, int y, int w, int h,
   const uint16_t cyan = rgb565(114, 202, 255);
   drawConceptCard(x, y, w, h, 12, false);
   drawIconBitmapScaled(x + 12, y + (h - 40) / 2, iconData, 2);
-  printBoldAt(x + 64, y + 9, label, cyan, 2);
+  printBoldAt(x + 64, y + 8, label, cyan, 1);
   if (!isfinite(value)) {
-    printBoldAt(x + 64, y + 27, "--", C_WHITE, 3);
+    printBoldAt(x + 64, y + 25, "--", C_WHITE, 3);
     return;
   }
-
   String number;
   if (signedValue && value >= 0.0f) number += "+";
   number += String(value, 1);
-  setText(C_WHITE, 3);
-  int16_t x1, y1;
-  uint16_t numberW, numberH;
-  gfx->getTextBounds(number, 0, 0, &x1, &y1, &numberW, &numberH);
+  const int numberW = tDisplayTextWidth(number, 3);
   const int valueX = x + 64;
-  const int valueY = y + 27;
+  const int valueY = y + 25;
   printBoldAt(valueX, valueY, number, C_WHITE, 3);
-  gfx->drawCircle(valueX + (int)numberW + 5, valueY + 6, 3, C_WHITE);
-  printBoldAt(valueX + (int)numberW + 11, valueY + 8, "F", C_WHITE, 2);
+  gfx->drawCircle(valueX + numberW + 4, valueY + 4, 2, C_WHITE);
+  printBoldAt(valueX + numberW + 9, valueY, "F", C_WHITE, 2);
 }
 
 static void drawApparentTemperature(float apparentF) {
-  String value = String((int)lroundf(apparentF));
-  const uint8_t numberSize = value.length() >= 3 ? 8 : 9;
-  const uint8_t unitSize = 4;
-  const int centerX = 320, topY = 143;
-  setText(C_WHITE, numberSize);
-  int16_t x1, y1; uint16_t numberW, numberH;
-  gfx->getTextBounds(value, 0, 0, &x1, &y1, &numberW, &numberH);
-  setText(C_WHITE, unitSize);
-  uint16_t fW, fH; gfx->getTextBounds("F", 0, 0, &x1, &y1, &fW, &fH);
-  // Arduino_GFX text bounds include the final character-cell spacing. Pull the
-  // degree/F unit into that trailing space so the temperature reads as one
-  // compact value instead of leaving a large visual gap after the digits.
-  const int groupW = (int)numberW + 10 + (int)fW;
-  const int startX = centerX - groupW / 2;
-  printBoldAt(startX, topY, value, C_WHITE, numberSize);
-  const int unitX = startX + (int)numberW - 4;
-  gfx->drawCircle(unitX + 3, topY + 7, 4, C_WHITE);
-  printBoldAt(unitX + 12, topY + 20, "F", C_WHITE, unitSize);
+  const String value = String((int)lroundf(apparentF));
+  const lgfx::IFont *numberFont = &fonts::Font7;
+  const lgfx::IFont *unitFont = &fonts::Font4;
+  const int valueW = tDisplayTextWidth(value, numberFont);
+  const int fW = tDisplayTextWidth("F", unitFont);
+  const int groupW = valueW + 13 + fW;
+  const int startX = 320 - groupW / 2;
+  const int topY = 143;
+  drawTDisplayTextAt(startX, topY, value, C_WHITE, numberFont);
+  const int degreeX = startX + valueW + 3;
+  gfx->drawCircle(degreeX, topY + 7, 3, C_WHITE);
+  drawTDisplayTextAt(degreeX + 8, topY + 13, "F", C_WHITE, unitFont);
 }
 
 void drawForecastHighLowCard() {
@@ -236,42 +275,34 @@ void drawForecastHighLowCard() {
   const bool tomorrow = forecastShowsTomorrow();
   drawConceptCard(477, 316, 290, 76, 14, true);
   drawIconBitmapScaled(493, 335, ICON_SUN, 2);
-  centerBoldText(tomorrow ? "TOMORROW" : "TODAY", 620, 322, 2, cyan);
-  centerBoldText("HIGH / LOW F", 620, 341, 1, muted);
+  centerBoldText(tomorrow ? "TOMORROW" : "TODAY", 620, 322, 1, cyan);
+  centerBoldText("HIGH", 580, 338, 1, muted);
+  centerBoldText("LOW", 680, 338, 1, muted);
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
   if (wx.forecastValid && isfinite(high) && isfinite(low)) {
     String highText = String((int)lroundf(high));
     String lowText = String((int)lroundf(low));
-    setText(C_WHITE, 4);
-    int16_t x1, y1;
-    uint16_t highW, textH, lowW, slashW;
-    gfx->getTextBounds(highText, 0, 0, &x1, &y1, &highW, &textH);
-    gfx->getTextBounds(lowText, 0, 0, &x1, &y1, &lowW, &textH);
-    gfx->getTextBounds("/", 0, 0, &x1, &y1, &slashW, &textH);
-    const int degreeSlot = 13;
-    const int gap = 8;
-    const int groupW = (int)highW + degreeSlot + gap + (int)slashW + gap +
-                       (int)lowW + degreeSlot;
-    int valueX = 635 - groupW / 2;
-    printBoldAt(valueX, 355, highText, C_WHITE, 4);
-    gfx->drawCircle(valueX + (int)highW + 5, 361, 3, C_WHITE);
-    valueX += (int)highW + degreeSlot + gap;
-    printBoldAt(valueX, 355, "/", C_WHITE, 4);
-    valueX += (int)slashW + gap;
-    printBoldAt(valueX, 355, lowText, C_WHITE, 4);
-    gfx->drawCircle(valueX + (int)lowW + 5, 361, 3, C_WHITE);
+    const int highW = tDisplayTextWidth(highText, 2);
+    const int lowW = tDisplayTextWidth(lowText, 2);
+    int hx = 580 - (highW + 8) / 2;
+    int lx = 680 - (lowW + 8) / 2;
+    printBoldAt(hx, 354, highText, C_WHITE, 2);
+    gfx->drawCircle(hx + highW + 3, 358, 2, C_WHITE);
+    printBoldAt(lx, 354, lowText, C_WHITE, 2);
+    gfx->drawCircle(lx + lowW + 3, 358, 2, C_WHITE);
   } else {
-    centerBoldText("-- / --", 635, 355, 4, C_WHITE);
+    centerBoldText("--", 580, 354, 2, C_WHITE);
+    centerBoldText("--", 680, 354, 2, C_WHITE);
   }
 }
 
 static void drawHeader() {
   String station = cfg.stationName.length() ? cfg.stationName : "Weather Station";
   if (station.length() > 20) station = station.substring(0, 20);
-  printBoldAt(30, 20, station, C_WHITE, station.length() <= 13 ? 4 : 3);
-  rightText(currentDateText(), 770, 27, 2, rgb565(219, 231, 238));
-  printBoldAt(30, 56, "CURRENT CONDITIONS", rgb565(157, 184, 202), 2);
+  printBoldAt(30, 20, station, C_WHITE, 2);
+  rightText(currentDateText(), 770, 27, 1, rgb565(219, 231, 238));
+  printBoldAt(30, 56, "CURRENT CONDITIONS", rgb565(157, 184, 202), 1);
   gfx->drawFastHLine(30, 76, 740, rgb565(23, 63, 85));
 }
 
@@ -280,15 +311,13 @@ void drawFooter() {
   gfx->fillRect(0, 400, LCD_WIDTH, 80, C_BLACK);
   drawConceptCard(33, 410, 734, 52, 14, true);
   if (WiFi.status() != WL_CONNECTED) {
-    centerBoldText(setupApStarted ? "Setup: 192.168.4.1/config" : "Wi-Fi disconnected", 400, 427, 2, C_WHITE); return;
+    centerBoldText(setupApStarted ? "Setup: 192.168.4.1/config" : "Wi-Fi disconnected", 400, 425, 2, C_WHITE); return;
   }
-  if (!apiConfigured()) { centerBoldText("Open /config", 400, 427, 2, C_WHITE); return; }
-
+  if (!apiConfigured()) { centerBoldText("Open /config", 400, 425, 2, C_WHITE); return; }
   const bool offline = !wx.valid;
   const bool stale = !offline && dataStale();
   const uint16_t stateColor = offline ? red : (stale ? red : green);
   drawClockIcon(67, 436, muted);
-
   String left;
   String state;
   uint16_t leftColor = C_WHITE;
@@ -297,45 +326,32 @@ void drawFooter() {
     state = "OFFLINE";
     leftColor = lastApiError.length() ? red : C_WHITE;
   } else {
-    left = "Updated "; left += updateClockText();
+    left = "Updated " + updateClockText();
     state = stale ? "STALE" : "ONLINE";
     leftColor = stale ? red : C_WHITE;
   }
-  printBoldAt(94, 427, left, leftColor, 2);
+  printBoldAt(94, 425, left, leftColor, 2);
   gfx->drawFastVLine(570, 419, 34, rgb565(85, 115, 133));
-
-  // 8 px at 800x480 gives the same apparent gap as LILYGO's 4 px.
   gfx->fillCircle(649, 436, 5, stateColor);
-  printBoldAt(662, 427, state, stateColor, 2);
+  printBoldAt(662, 425, state, stateColor, 2);
 }
-
 
 void drawWaitingScreen() {
   gfx->fillScreen(C_BLACK);
   drawHeader();
-
-  // Waiting state owns the complete content area between header and footer.
   drawConceptCard(33, 82, 734, 310, 18, true);
-  centerBoldText(setupApStarted ? "SETUP" : "WAITING", 400, 164, 6, C_WHITE);
-
+  centerBoldText(setupApStarted ? "SETUP" : "WAITING", 400, 164, 4, C_WHITE);
   if (setupApStarted) {
-    centerBoldText("Connect to setup Wi-Fi", 400, 233, 3, rgb565(159, 183, 201));
+    centerBoldText("Connect to setup Wi-Fi", 400, 233, 2, rgb565(159, 183, 201));
     centerBoldText(setupApName(), 400, 281, 2, rgb565(114, 202, 255));
     centerBoldText("192.168.4.1/config", 400, 311, 2, rgb565(114, 202, 255));
   } else {
-    centerBoldText(lastApiError.length() ? "Weather API error" : "Preparing display",
-                   400, 233, 3, rgb565(159, 183, 201));
-    if (WiFi.status() != WL_CONNECTED) {
-      centerBoldText("Connecting to Wi-Fi...", 400, 281, 2, rgb565(114, 202, 255));
-    } else if (!apiConfigured()) {
-      centerBoldText("API setup needed", 400, 281, 2, rgb565(114, 202, 255));
-    } else if (lastApiError.length()) {
-      centerBoldText("Check provider configuration", 400, 281, 2, rgb565(114, 202, 255));
-    } else {
-      centerBoldText("Fetching weather...", 400, 281, 2, rgb565(114, 202, 255));
-    }
+    centerBoldText(lastApiError.length() ? "Weather API error" : "Preparing display", 400, 233, 2, rgb565(159, 183, 201));
+    if (WiFi.status() != WL_CONNECTED) centerBoldText("Connecting to Wi-Fi...", 400, 281, 2, rgb565(114, 202, 255));
+    else if (!apiConfigured()) centerBoldText("API setup needed", 400, 281, 2, rgb565(114, 202, 255));
+    else if (lastApiError.length()) centerBoldText("Check provider configuration", 400, 281, 2, rgb565(114, 202, 255));
+    else centerBoldText("Fetching weather...", 400, 281, 2, rgb565(114, 202, 255));
   }
-
   drawFooter();
 }
 
@@ -346,11 +362,10 @@ void drawWeatherScreen() {
   float apparentF = apparentOutdoorF();
   RiskStyle risk = riskFor(apparentF);
   const bool cold = windChillApplies();
-
   fillGradientRoundRect(33, 82, 427, 225, 18, risk.panelTop, risk.panelBottom);
   gfx->drawRoundRect(33, 82, 427, 225, 18, risk.border);
   if (cold) drawHeroWind(66, 143); else drawHeroSun(110, 160);
-  centerBoldText(apparentTitle(), 325, 103, 3, C_WHITE);
+  centerBoldText(apparentTitle(), 325, 103, 2, C_WHITE);
   drawApparentTemperature(apparentF);
   gfx->fillRoundRect(60, 260, 373, 34, 17, risk.status);
   gfx->drawRoundRect(60, 260, 373, 34, 17, risk.accent);
@@ -363,31 +378,25 @@ void drawWeatherScreen() {
 
   drawConceptCard(33, 316, 207, 76, 14, true);
   drawIconBitmapScaled(48, 337, ICON_WIND, 2);
-  centerBoldText("WIND", 136, 322, 2, rgb565(157, 200, 228));
-  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 160, 342, 4, C_WHITE);
-  centerBoldText("mph", 160, 371, 1, muted);
-  centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"), 136, 380, 1, rgb565(166, 209, 234));
-  rightText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"), 225, 380, 1, rgb565(166, 209, 234));
+  centerBoldText("WIND", 136, 322, 1, rgb565(157, 200, 228));
+  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 160, 342, 2, C_WHITE);
+  centerBoldText("mph", 160, 365, 1, muted);
+  centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"), 136, 378, 1, rgb565(166, 209, 234));
 
   drawConceptCard(253, 316, 207, 76, 14, true);
   drawIconBitmapScaled(270, 337, ICON_COMPASS, 2);
-  centerBoldText("DIRECTION", 356, 322, 2, rgb565(157, 200, 228));
+  centerBoldText("DIRECTION", 356, 322, 1, rgb565(157, 200, 228));
   if (isfinite(wx.windDirDeg)) {
     String dirNumber = String((int)lroundf(wx.windDirDeg));
-    setText(C_WHITE, 4);
-    int16_t x1, y1;
-    uint16_t dirW, dirH;
-    gfx->getTextBounds(dirNumber, 0, 0, &x1, &y1, &dirW, &dirH);
-    const int groupW = (int)dirW + 13;
-    const int startX = 385 - groupW / 2;
-    printBoldAt(startX, 345, dirNumber, C_WHITE, 4);
-    gfx->drawCircle(startX + (int)dirW + 5, 351, 3, C_WHITE);
-    centerBoldText(directionText(wx.windDirDeg), 356, 376, 2, rgb565(157, 200, 228));
+    const int dirW = tDisplayTextWidth(dirNumber, 2);
+    const int startX = 385 - (dirW + 8) / 2;
+    printBoldAt(startX, 342, dirNumber, C_WHITE, 2);
+    gfx->drawCircle(startX + dirW + 3, 346, 2, C_WHITE);
+    centerBoldText(directionText(wx.windDirDeg), 356, 370, 1, rgb565(157, 200, 228));
   } else {
-    centerBoldText("--", 385, 345, 4, C_WHITE);
-    centerBoldText("--", 356, 376, 2, rgb565(157, 200, 228));
+    centerBoldText("--", 385, 342, 2, C_WHITE);
+    centerBoldText("--", 356, 370, 1, rgb565(157, 200, 228));
   }
-
   drawForecastHighLowCard();
   drawFooter();
 }
