@@ -11,6 +11,10 @@
 #include "ui_assets.h"
 
 #include <Arduino_GFX_Library.h>
+#include "fonts/FreeSans8pt7b.h"
+#include "fonts/FreeSans10pt7b.h"
+#include "fonts/FreeSans16pt7b.h"
+#include "fonts/FreeSans18pt7b.h"
 
 // Waveshare ESP32-S3-Touch-LCD-2.8 / ESP32-S3-LCD-2.8
 #define LCD_MOSI 45
@@ -126,17 +130,34 @@ static void fillGradientRoundRect(int x, int y, int w, int h, int radius,
   }
 }
 
-void setText(uint16_t color, uint8_t size) {
-  gfx->setTextColor(color);
-  gfx->setTextSize(size);
+static const GFXfont *uiFontForSize(uint8_t size) {
+  // Use native rasterized FreeSans sizes instead of enlarging the 5x7 bitmap
+  // font. This keeps curves/diagonals smooth and also reduces the visual size.
+  if (size <= 1) return &FreeSans8pt7b;
+  if (size == 2) return &FreeSans10pt7b;
+  if (size <= 4) return &FreeSans16pt7b;
+  return &FreeSans18pt7b;
 }
 
-void centerText(const String &text, int centerX, int baselineY, uint8_t size, uint16_t color) {
+void setText(uint16_t color, uint8_t size) {
+  gfx->setFont(uiFontForSize(size));
+  gfx->setTextColor(color);
+  gfx->setTextSize(1);
+}
+
+static void setCursorForTopLeft(const String &text, int x, int y) {
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  gfx->setCursor(x - x1, y - y1);
+}
+
+void centerText(const String &text, int centerX, int topY, uint8_t size, uint16_t color) {
   setText(color, size);
   int16_t x1, y1;
   uint16_t w, h;
   gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-  gfx->setCursor(centerX - (int)w / 2, baselineY);
+  gfx->setCursor(centerX - (int)w / 2 - x1, topY - y1);
   gfx->print(text);
 }
 
@@ -158,25 +179,17 @@ void drawWindIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x,
 void drawCompassIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_COMPASS); }
 void drawSunIcon(int x, int y, uint16_t color) { (void)color; drawIconBitmap(x - 10, y - 10, ICON_SUN); }
 
-// The Arduino_GFX built-in bitmap font is already aligned to the physical
-// pixel grid.  Repainting each glyph at +1 X/Y to fake bold text caused
-// visible smearing and stair-stepped edges on the 240x320 Waveshare panel.
-// Keep these helpers for the existing layout API, but render every glyph once
-// so labels, values, the header, risk pill and footer stay crisp.
+// FreeSans is rendered at the target size, so no synthetic bold overdraw or
+// integer bitmap scaling is needed. Coordinates remain top-left based to keep
+// the existing layout stable while changing font technology.
 static void printBoldAt(int x, int y, const String &text, uint16_t color, uint8_t size) {
   setText(color, size);
-  gfx->setCursor(x, y);
+  setCursorForTopLeft(text, x, y);
   gfx->print(text);
 }
 
 static void centerBoldText(const String &text, int centerX, int y, uint8_t size, uint16_t color) {
-  setText(color, size);
-  int16_t x1, y1;
-  uint16_t w, h;
-  gfx->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-  int x = centerX - (int)w / 2;
-  gfx->setCursor(x, y);
-  gfx->print(text);
+  centerText(text, centerX, y, size, color);
 }
 
 static void drawConceptCard(int x, int y, int w, int h, int radius = 8, bool highlight = false) {
@@ -274,16 +287,19 @@ static void drawMetricCardValue(int x, int y, int w, int h, const uint16_t *icon
 static void drawApparentTemperature(float apparentF) {
   String value = String((int)lroundf(apparentF));
   const bool threeDigits = value.length() >= 3;
+  const uint8_t valueSize = threeDigits ? 4 : 5;
+  const int valueX = threeDigits ? 50 : 57;
+  const int valueY = threeDigits ? 118 : 116;
 
-  if (threeDigits) {
-    printBoldAt(55, 122, value, C_WHITE, 4);
-    gfx->drawCircle(119, 123, 3, C_WHITE);
-    printBoldAt(125, 134, "F", C_WHITE, 2);
-  } else {
-    printBoldAt(57, 116, value, C_WHITE, 5);
-    gfx->drawCircle(118, 119, 3, C_WHITE);
-    printBoldAt(124, 132, "F", C_WHITE, 2);
-  }
+  setText(C_WHITE, valueSize);
+  int16_t x1, y1;
+  uint16_t valueW, valueH;
+  gfx->getTextBounds(value, 0, 0, &x1, &y1, &valueW, &valueH);
+  printBoldAt(valueX, valueY, value, C_WHITE, valueSize);
+
+  const int degreeX = valueX + (int)valueW + 4;
+  gfx->drawCircle(degreeX, valueY + 4, 2, C_WHITE);
+  printBoldAt(degreeX + 6, valueY + 8, "F", C_WHITE, 1);
 }
 
 void drawForecastHighLowCard() {
@@ -295,7 +311,7 @@ void drawForecastHighLowCard() {
   drawSunIcon(160, 237, rgb565(255, 193, 43));
 
   centerBoldText(tomorrow ? "TOMORROW" : "TODAY", 188, 214, 1, cyan);
-  centerBoldText("HIGH / LOW F", 188, 225, 1, muted);
+  centerBoldText("HIGH / LOW", 188, 225, 1, muted);
 
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
@@ -327,7 +343,7 @@ void headerText() {
   int16_t x1, y1;
   uint16_t w, h;
   gfx->getTextBounds(dateStr, 0, 0, &x1, &y1, &w, &h);
-  gfx->setCursor(229 - w, 18);
+  gfx->setCursor(229 - (int)w - x1, 18 - y1);
   gfx->print(dateStr);
 
   printBoldAt(12, 34, "CURRENT CONDITIONS", rgb565(157, 184, 202), 1);
@@ -461,13 +477,12 @@ void drawWeatherScreen() {
   // Bottom three cards.
   drawConceptCard(10, 210, 62, 52, 8, true);
   drawWindIcon(15, 226, cyan);
-  centerBoldText("WIND", 41, 214, 1, rgb565(157, 200, 228));
+  centerBoldText("WIND MPH", 41, 214, 1, rgb565(157, 200, 228));
   centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 51, 228, 2, C_WHITE);
-  centerBoldText("mph", 51, 242, 1, muted);
   centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"),
-                 41, 251, 1, rgb565(166, 209, 234));
+                 41, 244, 1, rgb565(166, 209, 234));
   centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"),
-                 41, 258, 1, rgb565(166, 209, 234));
+                 41, 253, 1, rgb565(166, 209, 234));
 
   drawConceptCard(76, 210, 62, 52, 8, true);
   drawCompassIcon(88, 236, cyan);
