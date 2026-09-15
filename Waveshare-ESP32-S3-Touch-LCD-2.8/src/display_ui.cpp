@@ -308,10 +308,9 @@ void drawForecastHighLowCard() {
   const bool tomorrow = forecastShowsTomorrow();
 
   drawConceptCard(143, 210, 87, 52, 8, true);
-  drawSunIcon(160, 237, rgb565(255, 193, 43));
-
   centerBoldText(tomorrow ? "TOMORROW" : "TODAY", 188, 214, 1, cyan);
-  centerBoldText("HIGH / LOW", 188, 225, 1, muted);
+  centerBoldText("HIGH", 164, 225, 1, muted);
+  centerBoldText("LOW", 207, 225, 1, muted);
 
   float high = tomorrow ? wx.forecastTomorrowHighF : wx.forecastTodayHighF;
   float low = tomorrow ? wx.forecastTomorrowLowF : wx.forecastTodayLowF;
@@ -323,13 +322,16 @@ void drawForecastHighLowCard() {
     uint16_t highW, textH, lowW;
     gfx->getTextBounds(highText, 0, 0, &x1, &y1, &highW, &textH);
     gfx->getTextBounds(lowText, 0, 0, &x1, &y1, &lowW, &textH);
-    printBoldAt(148, 239, highText, C_WHITE, 2);
-    gfx->drawCircle(148 + (int)highW + 3, 242, 2, C_WHITE);
-    printBoldAt(183, 245, "/", C_WHITE, 1);
-    printBoldAt(192, 239, lowText, C_WHITE, 2);
-    gfx->drawCircle(192 + (int)lowW + 3, 242, 2, C_WHITE);
+
+    int highX = 164 - ((int)highW + 7) / 2;
+    int lowX = 207 - ((int)lowW + 7) / 2;
+    printBoldAt(highX, 239, highText, C_WHITE, 2);
+    gfx->drawCircle(highX + (int)highW + 3, 241, 2, C_WHITE);
+    printBoldAt(lowX, 239, lowText, C_WHITE, 2);
+    gfx->drawCircle(lowX + (int)lowW + 3, 241, 2, C_WHITE);
   } else {
-    centerBoldText("-- / --", 190, 239, 2, C_WHITE);
+    centerBoldText("--", 164, 239, 2, C_WHITE);
+    centerBoldText("--", 207, 239, 2, C_WHITE);
   }
 }
 
@@ -371,12 +373,12 @@ void drawFooter() {
   const bool offline = !wx.valid;
   const bool stale = !offline && dataStale();
   const uint16_t stateColor = offline ? red : (stale ? red : green);
-  drawClockIcon(24, 290, muted);
+  drawClockIcon(23, 290, muted);
 
   String left;
   String state;
   uint16_t leftColor = C_WHITE;
-  int leftX = 45;
+  int leftX = 39;
   if (offline) {
     left = lastApiError.length() ? "Weather API error" : "Fetching weather...";
     state = "OFFLINE";
@@ -390,10 +392,11 @@ void drawFooter() {
   }
   printBoldAt(leftX, 286, left, leftColor, 1);
 
-  // Preserve the LILYGO visual contract: 4 px from dot edge to label.
-  gfx->drawFastVLine(151, 280, 20, rgb565(85, 115, 133));
-  gfx->fillCircle(172, 290, 3, stateColor);
-  printBoldAt(179, 286, state, stateColor, 1);
+  // Keep the state visually separate from the update time while preserving a
+  // 4 px dot-to-label gap.
+  gfx->drawFastVLine(150, 280, 20, rgb565(85, 115, 133));
+  gfx->fillCircle(164, 290, 3, stateColor);
+  printBoldAt(171, 286, state, stateColor, 1);
 }
 
 
@@ -461,41 +464,45 @@ void drawWeatherScreen() {
 
   drawConceptCard(143, 91, 87, 34, 7, false);
   drawDrop(157, 98, rgb565(72, 186, 255));
-  printBoldAt(169, 97, "HUMIDITY", cyan, 1);
+  printBoldAt(169, 97, "HUMID", cyan, 1);
   printBoldAt(169, 109, String((int)lroundf(wx.humidity)) + "%", C_WHITE, 2);
 
   drawConceptCard(143, 128, 87, 34, 7, false);
   drawLeaf(157, 145, green);
-  printBoldAt(169, 134, "DEW POINT", cyan, 1);
+  printBoldAt(169, 134, "DEW PT", cyan, 1);
   printTempValueCompact(169, 146, wx.dewPointF);
 
   drawConceptCard(143, 165, 87, 40, 7, false);
   drawTrend(148, 176, cyan);
-  printBoldAt(169, 171, "FROM YDAY", cyan, 1);
+  printBoldAt(169, 171, "VS YDAY", cyan, 1);
   printSignedTempValueCompact(169, 186, wx.fromYesterdayF);
 
-  // Bottom three cards.
+  // Bottom cards use short labels and centered values so adjacent cards do not
+  // visually run together on the 240-pixel-wide panel.
   drawConceptCard(10, 210, 62, 52, 8, true);
-  drawWindIcon(15, 226, cyan);
-  centerBoldText("WIND MPH", 41, 214, 1, rgb565(157, 200, 228));
-  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 51, 228, 2, C_WHITE);
-  centerBoldText(String("GUST ") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--"),
-                 41, 244, 1, rgb565(166, 209, 234));
-  centerBoldText(String("MAX ") + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--"),
-                 41, 253, 1, rgb565(166, 209, 234));
+  centerBoldText("WIND", 41, 214, 1, rgb565(157, 200, 228));
+  centerBoldText(isfinite(wx.windMph) ? String(wx.windMph, 1) : "--", 41, 227, 2, C_WHITE);
+  centerBoldText("MPH", 41, 243, 1, muted);
+  String windSummary = String("G") + (isfinite(wx.gustMph) ? String(wx.gustMph, 1) : "--") +
+                       " M" + (isfinite(wx.maxDailyGustMph) ? String(wx.maxDailyGustMph, 1) : "--");
+  centerBoldText(windSummary, 41, 253, 1, rgb565(166, 209, 234));
 
   drawConceptCard(76, 210, 62, 52, 8, true);
-  drawCompassIcon(88, 236, cyan);
-  centerBoldText("DIRECTION", 107, 214, 1, rgb565(157, 200, 228));
+  centerBoldText("DIR", 107, 214, 1, rgb565(157, 200, 228));
   if (isfinite(wx.windDirDeg)) {
     String dirNumber = String((int)lroundf(wx.windDirDeg));
-    centerBoldText(dirNumber, 116, 229, 2, C_WHITE);
-    gfx->drawCircle(135, 231, 2, C_WHITE);
+    setText(C_WHITE, 2);
+    int16_t x1, y1;
+    uint16_t dirW, dirH;
+    gfx->getTextBounds(dirNumber, 0, 0, &x1, &y1, &dirW, &dirH);
+    int dirX = 107 - ((int)dirW + 7) / 2;
+    printBoldAt(dirX, 229, dirNumber, C_WHITE, 2);
+    gfx->drawCircle(dirX + (int)dirW + 3, 231, 2, C_WHITE);
   } else {
-    centerBoldText("--", 116, 229, 2, C_WHITE);
+    centerBoldText("--", 107, 229, 2, C_WHITE);
   }
   centerBoldText(isfinite(wx.windDirDeg) ? directionText(wx.windDirDeg) : "--",
-                 107, 250, 1, rgb565(157, 200, 228));
+                 107, 248, 1, rgb565(157, 200, 228));
 
   drawForecastHighLowCard();
   drawFooter();
