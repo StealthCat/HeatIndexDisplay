@@ -428,7 +428,18 @@ void drawWeatherScreen() {
   drawApparentTemperature(apparentF);
   gfx->fillRoundRect(20, 168, 108, 24, 12, risk.status);
   gfx->drawRoundRect(20, 168, 108, 24, 12, risk.accent);
-  centerBoldText(apparentRiskLabel(), 74, 172, 2, risk.accent);
+  const String riskLabelText = apparentRiskLabel();
+  if (tDisplayTextWidth(riskLabelText, 2) <= 96) {
+    centerBoldText(riskLabelText, 74, 172, 2, risk.accent);
+  } else {
+    const int split = riskLabelText.indexOf(' ');
+    if (split > 0) {
+      centerBoldText(riskLabelText.substring(0, split), 74, 170, 1, risk.accent);
+      centerBoldText(riskLabelText.substring(split + 1), 74, 180, 1, risk.accent);
+    } else {
+      centerBoldText(riskLabelText, 74, 176, 1, risk.accent);
+    }
+  }
 
   drawConceptCard(143, 54, 87, 34, 7, false);
   drawThermometer(148, 61, rgb565(255, 92, 75));
