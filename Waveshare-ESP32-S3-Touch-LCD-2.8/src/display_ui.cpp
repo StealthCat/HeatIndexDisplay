@@ -310,13 +310,13 @@ static void drawApparentTemperature(float apparentF) {
   const lgfx::IFont *unitFont = &fonts::Font4;
   const int valueW = tDisplayTextWidth(value, numberFont);
   const int fW = tDisplayTextWidth("F", unitFont);
-  const int groupW = valueW + 12 + fW;
-  const int startX = 94 - groupW / 2;
-  const int topY = 112;
+  const int groupW = valueW + 9 + fW;
+  const int startX = 86 - groupW / 2;
+  const int topY = 109;
   drawTDisplayTextAt(startX, topY, value, C_WHITE, numberFont);
-  const int degreeX = startX + valueW + 3;
+  const int degreeX = startX + valueW + 2;
   gfx->drawCircle(degreeX, topY + 7, 3, C_WHITE);
-  drawTDisplayTextAt(degreeX + 7, topY + 13, "F", C_WHITE, unitFont);
+  drawTDisplayTextAt(degreeX + 6, topY + 13, "F", C_WHITE, unitFont);
 }
 
 void drawForecastHighLowCard() {
@@ -424,11 +424,11 @@ void drawWeatherScreen() {
   fillGradientRoundRect(10, 54, 128, 151, 12, risk.panelTop, risk.panelBottom);
   gfx->drawRoundRect(10, 54, 128, 151, 12, risk.border);
   if (cold) drawHeroWind(20, 88); else drawHeroSun(36, 96);
-  centerBoldText(apparentTitle(), 94, 66, 2, C_WHITE);
+  centerBoldText(apparentTitle(), 88, 64, 2, C_WHITE);
   drawApparentTemperature(apparentF);
-  gfx->fillRoundRect(18, 170, 112, 24, 12, risk.status);
-  gfx->drawRoundRect(18, 170, 112, 24, 12, risk.accent);
-  centerBoldText(apparentRiskLabel(), 74, 174, 2, risk.accent);
+  gfx->fillRoundRect(20, 168, 108, 24, 12, risk.status);
+  gfx->drawRoundRect(20, 168, 108, 24, 12, risk.accent);
+  centerBoldText(apparentRiskLabel(), 74, 172, 2, risk.accent);
 
   drawConceptCard(143, 54, 87, 34, 7, false);
   drawThermometer(148, 61, rgb565(255, 92, 75));
