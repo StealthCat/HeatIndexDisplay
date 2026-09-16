@@ -1,0 +1,51 @@
+name: Tune Waveshare 2.8 heat-index hero
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/tune_waveshare28_heatindex.py'
+      - '.github/workflows/tune-waveshare28-heatindex.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  tune-build-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Apply heat-index geometry tune
+        run: python3 tools/tune_waveshare28_heatindex.py
+
+      - name: Verify geometry contract
+        run: |
+          grep -q 'const int startX = 86 - groupW / 2;' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'const int topY = 109;' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'centerBoldText(apparentTitle(), 88, 64, 2, C_WHITE);' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+          grep -q 'fillRoundRect(20, 168, 108, 24, 12, risk.status);' Waveshare-ESP32-S3-Touch-LCD-2.8/src/display_ui.cpp
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build Waveshare 2.8
+        run: pio run -d Waveshare-ESP32-S3-Touch-LCD-2.8
+
+      - name: Commit firmware and remove helpers
+        run: |
+          rm -f tools/tune_waveshare28_heatindex.py .github/workflows/tune-waveshare28-heatindex.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Refine Waveshare 2.8 heat-index layout' || exit 0
+          git push origin HEAD:main
