@@ -552,7 +552,7 @@ static void drawFullScreenHero() {
   // the category so the hierarchy stays clean and the label can be centered.
   display.setTextDatum(textdatum_t::middle_center);
   display.setFont(&fonts::Font2);
-  drawBoldText("HEAT RISK", 251, 48, C_WHITE);
+  drawBoldText(cold ? "COLD RISK" : "HEAT RISK", 251, 48, C_WHITE);
 
   display.fillRoundRect(193, 61, 116, 48, 24, risk.status);
   display.drawRoundRect(193, 61, 116, 48, 24, risk.accent);
